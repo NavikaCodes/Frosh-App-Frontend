@@ -25,7 +25,7 @@ const AboutScreen = ({ theme }) => {
       id: 'hostels',
       title: 'HOSTELS',
       subtitle: 'Your home away from home',
-      onPress: null,
+      onPress: () => navigation.navigate('Hostels'), // ✅ Now navigates to HostelsScreen
     },
     {
       id: 'societies',

@@ -13,17 +13,19 @@ import {
   Animated,
   Alert,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native"; // 👈 import
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import AboutScreen from "./AboutScreen";
-import BootcampScreen from "./BootcampScreen";  // <-- import
+import BootcampScreen from "./BootcampScreen";
 import { lightTheme } from "./LightScreen";
 import { darkTheme } from "./DarkScreen";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 export default function HomeScreen() {
-  const [activeTab, setActiveTab] = useState("bootcamp"); // default to bootcamp
+  const navigation = useNavigation(); // 👈 for navigating to HelpSupport
+  const [activeTab, setActiveTab] = useState("bootcamp");
   const [modalVisible, setModalVisible] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -31,9 +33,6 @@ export default function HomeScreen() {
   const isBootcamp = activeTab === "bootcamp";
   const isFrosh = activeTab === "frosh";
   const isAbout = activeTab === "about";
-
-  // Show home content (live event) only when Frosh is active
-  const showHomeContent = isFrosh;
 
   const menuOptions = [
     { id: "account", label: "Account", icon: "person-outline" },
@@ -47,6 +46,11 @@ export default function HomeScreen() {
     setModalVisible(false);
     if (id === "switch") {
       setIsDarkMode(!isDarkMode);
+      return;
+    }
+    if (id === "help") {
+      // 👇 navigate to HelpSupport and pass the current theme
+      navigation.navigate("HelpSupport", { theme: isDarkMode ? darkTheme : lightTheme });
       return;
     }
     Alert.alert("Menu Item", `You tapped "${id}"`);
@@ -125,7 +129,7 @@ export default function HomeScreen() {
                 onPress={() => setActiveTab("frosh")}
               >
                 <View style={styles.tabContent}>
-                  <Image source={require("../assets/logo.png")} resizeMode="contain" style={styles.tabLogoLarge} />
+                  <Image source={require("../assets/star.png")} resizeMode="contain" style={styles.tabLogoLarge} />
                 </View>
               </TouchableOpacity>
 
@@ -135,7 +139,7 @@ export default function HomeScreen() {
                 onPress={() => setActiveTab("about")}
               >
                 <View style={styles.tabContent}>
-                  <Ionicons name="information-circle-outline" size={28} color={isAbout ? theme.tabActiveText : theme.tabInactiveText} />
+                  <Ionicons name="document-text-outline" size={28} color={isAbout ? theme.tabActiveText : theme.tabInactiveText} />
                   <Text style={[isAbout ? styles.tabActive : styles.tabInactive, { color: isAbout ? theme.tabActiveText : theme.tabInactiveText }]}>About</Text>
                 </View>
               </TouchableOpacity>
@@ -144,7 +148,7 @@ export default function HomeScreen() {
 
           {/* CONTENT */}
           {isBootcamp ? (
-            <BootcampScreen theme={theme} /> // pass theme for consistency
+            <BootcampScreen theme={theme} />
           ) : isFrosh ? (
             <View style={[styles.liveCard, theme.liveCard]}>
               <View style={styles.liveHeadingContainer}>
@@ -230,7 +234,6 @@ export default function HomeScreen() {
 // ---------- STYLES (unchanged) ----------
 const styles = StyleSheet.create({
   container: { flex: 1 },
-
   header: {
     marginTop: 55,
     paddingHorizontal: 24,
@@ -238,10 +241,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-
   hello: { fontSize: 28, fontWeight: "800" },
   welcome: { marginTop: 2, fontSize: 16, fontWeight: "500" },
-
   profileCircle: {
     width: 50,
     height: 50,
@@ -253,7 +254,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     elevation: 6,
   },
-
   topCard: {
     marginHorizontal: 22,
     marginTop: 18,
@@ -261,14 +261,12 @@ const styles = StyleSheet.create({
     height: 80,
     overflow: "hidden",
   },
-
   tabsContainer: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-around",
   },
-
   tab: {
     flex: 1,
     height: 80,
@@ -277,46 +275,37 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     borderRadius: 20,
   },
-
   tabContent: {
     justifyContent: "center",
     alignItems: "center",
     gap: 2,
   },
-
-  tabLogoLarge: { width: 90, height: 60 },
-
+  tabLogoLarge: { width: 150, height: 120 },
   tabActive: { fontSize: 12, fontWeight: "700" },
   tabInactive: { fontSize: 12, fontWeight: "500" },
-
   liveCard: {
     marginHorizontal: 22,
     marginTop: 24,
     borderRadius: 28,
     padding: 18,
   },
-
   liveHeadingContainer: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 14,
   },
-
   line: { flex: 1, height: 2 },
-
   liveHeading: {
     marginHorizontal: 10,
     fontWeight: "700",
     fontSize: 16,
     letterSpacing: 2,
   },
-
   eventImage: {
     width: "100%",
     height: 200,
     borderRadius: 20,
   },
-
   liveNow: {
     marginTop: 14,
     borderWidth: 2,
@@ -325,38 +314,31 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     alignSelf: "flex-start",
   },
-
   liveNowText: { fontSize: 14, fontWeight: "700" },
-
   eventTitle: {
     marginTop: 12,
     fontSize: 26,
     fontWeight: "800",
   },
-
   infoRow: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 10,
   },
-
   location: {
     marginLeft: 10,
     fontSize: 18,
     fontWeight: "700",
   },
-
   infoText: {
     marginLeft: 10,
     fontSize: 16,
   },
-
   bottomRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-
   arrowCircle: {
     width: 48,
     height: 48,
@@ -365,9 +347,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.3)" },
-
   modalContainer: {
     position: "absolute",
     bottom: 0,
@@ -384,7 +364,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -4 },
     elevation: 10,
   },
-
   modalHandle: {
     width: 40,
     height: 4,
@@ -392,17 +371,13 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginBottom: 16,
   },
-
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 14,
     borderBottomWidth: 1,
   },
-
   menuText: { fontSize: 18, fontWeight: "500", marginLeft: 16 },
-
   closeButton: { marginTop: 8, paddingVertical: 14, alignItems: "center" },
-
   closeButtonText: { fontSize: 18, fontWeight: "600" },
 });

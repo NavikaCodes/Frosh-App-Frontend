@@ -19,7 +19,8 @@ const AboutScreen = ({ theme }) => {
       id: 'team',
       title: 'OUR TEAM',
       subtitle: 'Meet the minds behind Frosh',
-      onPress: () => navigation.navigate('Team'),
+      // ✅ FIX: now navigates to Team with theme
+      onPress: () => navigation.navigate('Team', { theme }),
     },
     {
       id: 'hostels',
@@ -31,7 +32,6 @@ const AboutScreen = ({ theme }) => {
       id: 'societies',
       title: 'SOCIETIES',
       subtitle: 'Where passions find a platform',
-      // ✅ FIX: now navigates to Societies with theme
       onPress: () => navigation.navigate('Societies', { theme }),
     },
     {

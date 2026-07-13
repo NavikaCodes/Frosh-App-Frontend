@@ -12,20 +12,22 @@ import {
   Linking,
   Dimensions,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from '@expo/vector-icons/Ionicons';
 import { Feather } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
 
-// Fallback theme
+// Fallback theme (used only if no theme is passed at all)
 const fallbackTheme = {
   bgGradient: ['#020B18', '#061528', '#041220'],
   textPrimary: '#FFFFFF',
   textSecondary: '#D5DDF0',
   cardBg: '#0A1A2E',
   accent: '#2F80FF',
+  shadowColor: '#2F80FF',
+  lineColor: 'rgba(255,255,255,0.1)',
 };
 
 const helpLinks = [
@@ -43,9 +45,14 @@ const contacts = [
   { name: 'Nandini', number: '7009036797' },
 ];
 
-export default function HelpSupportScreen({ theme }) {
-  const t = theme || fallbackTheme;
+export default function HelpSupportScreen({ theme: themeProp }) {
   const navigation = useNavigation();
+  const route = useRoute();
+
+  const t = themeProp || route.params?.theme || fallbackTheme;
+
+  const isDarkTheme = t.textPrimary?.toUpperCase() === '#FFFFFF';
+
   const [modalVisible, setModalVisible] = useState(false);
 
   const handlePress = (item) => {
@@ -67,7 +74,11 @@ export default function HelpSupportScreen({ theme }) {
 
   return (
     <>
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle={isDarkTheme ? 'light-content' : 'dark-content'}
+      />
       <LinearGradient colors={t.bgGradient} style={styles.container}>
         <SafeAreaView style={{ flex: 1 }}>
           {/* Header */}
@@ -75,7 +86,7 @@ export default function HelpSupportScreen({ theme }) {
             <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
               <Icon name="arrow-back" size={24} color={t.textPrimary} />
             </TouchableOpacity>
-            <Text style={[styles.title, { color: t.textPrimary }]}>Help & Support</Text>
+            <Text style={[styles.title, { color: t.textPrimary }]}>Connect with us</Text>
             <View style={{ width: 40 }} />
           </View>
 
@@ -89,7 +100,10 @@ export default function HelpSupportScreen({ theme }) {
               {helpLinks.map((item) => (
                 <TouchableOpacity
                   key={item.id}
-                  style={[styles.card, { backgroundColor: t.cardBg }]}
+                  style={[
+                    styles.card,
+                    { backgroundColor: t.cardBg, borderColor: t.lineColor },
+                  ]}
                   onPress={() => handlePress(item)}
                   activeOpacity={0.7}
                 >
@@ -104,14 +118,24 @@ export default function HelpSupportScreen({ theme }) {
         </SafeAreaView>
       </LinearGradient>
 
-      {/* Phone Modal – unchanged */}
+      {/* Phone Modal */}
       <Modal visible={modalVisible} transparent animationType="fade">
         <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
-          <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.modalOverlay,
+              { backgroundColor: t.overlayColor || 'rgba(0,0,0,0.5)' },
+            ]}
+          >
             <TouchableWithoutFeedback onPress={() => {}}>
-              <View style={[styles.modalCard, { backgroundColor: t.cardBg }]}>
+              <View
+                style={[
+                  styles.modalCard,
+                  { backgroundColor: t.cardBg, shadowColor: t.shadowColor },
+                ]}
+              >
                 <Text style={[styles.modalTitle, { color: t.textPrimary }]}>Contact Support</Text>
-                <View style={[styles.divider, { backgroundColor: t.lineColor || 'rgba(255,255,255,0.1)' }]} />
+                <View style={[styles.divider, { backgroundColor: t.lineColor }]} />
                 {contacts.map((contact, index) => (
                   <TouchableOpacity
                     key={index}
@@ -119,7 +143,7 @@ export default function HelpSupportScreen({ theme }) {
                       styles.contactRow,
                       index < contacts.length - 1 && {
                         borderBottomWidth: 1,
-                        borderBottomColor: t.lineColor || 'rgba(255,255,255,0.1)',
+                        borderBottomColor: t.lineColor,
                       },
                     ]}
                     onPress={() => Linking.openURL(`tel:${contact.number}`)}
@@ -163,7 +187,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 15,
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: 0,
     marginBottom: 20,
     paddingHorizontal: 20,
   },
@@ -171,24 +195,23 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 16,
     paddingBottom: 20,
-    justifyContent: 'center', // vertically center if space allows
+    justifyContent: 'center',
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between', // distribute evenly
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
   card: {
-    width: '46%', // two cards per row with a small gap
-    height: 180, // fixed height for consistency
+    width: '46%',
+    height: 180,
     borderRadius: 24,
     marginBottom: 18,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
   },
   iconCircle: {
     width: 88,
@@ -206,7 +229,6 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -214,7 +236,6 @@ const styles = StyleSheet.create({
     width: width * 0.88,
     borderRadius: 28,
     padding: 24,
-    shadowColor: '#000',
     shadowOpacity: 0.3,
     shadowRadius: 24,
     elevation: 12,

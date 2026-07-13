@@ -11,7 +11,7 @@ import HostelsScreen from './screens/HostelScreen';
 import BoysScreen from './screens/BoysScreen';
 import GirlsScreen from './screens/GirlsScreen';
 import SocietiesScreen from './screens/SocietiesScreen';
-import HelpSupportScreen from './screens/HelpSupportScreen'; // 👈 import
+import ConnectScreen from './screens/ConnectScreen'; // ✅ import ConnectScreen
 
 const Stack = createNativeStackNavigator();
 
@@ -28,7 +28,7 @@ export default function App() {
           <Stack.Screen name="Boys" component={BoysScreen} />
           <Stack.Screen name="Girls" component={GirlsScreen} />
           <Stack.Screen name="Societies" component={SocietiesScreen} />
-          <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
+          <Stack.Screen name="ConnectUs" component={ConnectScreen} /> 
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

@@ -13,7 +13,7 @@ import {
   Animated,
   Alert,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native"; // 👈 import
+import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import AboutScreen from "./AboutScreen";
@@ -24,7 +24,7 @@ import { darkTheme } from "./DarkScreen";
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 export default function HomeScreen() {
-  const navigation = useNavigation(); // 👈 for navigating to HelpSupport
+  const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState("bootcamp");
   const [modalVisible, setModalVisible] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -36,7 +36,6 @@ export default function HomeScreen() {
 
   const menuOptions = [
     { id: "account", label: "Account", icon: "person-outline" },
-    { id: "help", label: "Help & Support", icon: "help-circle-outline" },
     { id: "about", label: "About Frosh", icon: "information-circle-outline" },
     { id: "connect", label: "Connect with us", icon: "chatbubble-outline" },
     { id: "switch", label: "Switch Mode", icon: isDarkMode ? "sunny-outline" : "moon-outline" },
@@ -48,9 +47,9 @@ export default function HomeScreen() {
       setIsDarkMode(!isDarkMode);
       return;
     }
-    if (id === "help") {
-      // 👇 navigate to HelpSupport and pass the current theme
-      navigation.navigate("HelpSupport", { theme: isDarkMode ? darkTheme : lightTheme });
+    if (id === "connect") {
+      // Navigate to ConnectScreen with the current theme
+      navigation.navigate("ConnectUs", { theme: isDarkMode ? darkTheme : lightTheme });
       return;
     }
     Alert.alert("Menu Item", `You tapped "${id}"`);

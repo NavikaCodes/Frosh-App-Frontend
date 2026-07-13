@@ -19,28 +19,70 @@ const fallbackTheme = {
   textPrimary: '#FFFFFF',
   textSecondary: '#D5DDF0',
   cardBg: '#0A1A2E',
-  accent: '#2F80FF',
+  accent: '#8F5BFF', // purple – used for icons/accents if needed
 };
 
+// ---------- GIRLS HOSTEL DATA ----------
 const rooms = [
-  { id: 1, name: 'Vasudha Hall', image: require('../assets/cos.avif') },
-  { id: 2, name: 'Ira Hall', image: require('../assets/cos.avif') },
-  { id: 3, name: 'Ananta Hall', image: require('../assets/cos.avif') },
-  { id: 4, name: 'Vahni Hall', image: require('../assets/cos.avif') },
-  { id: 5, name: 'Avni Hall', image: require('../assets/cos.avif') },
-  { id: 6, name: 'Dhriti Hall', image: require('../assets/cos.avif') },
+  {
+    id: 1,
+    name: 'Vasudha Hall',
+    nickname: 'Hostel G/E',
+    seating: 'Three seater(AC)/Four seater(AC)',
+    capacity: '360 capacity',
+    image: require('../assets/cos.avif'),
+  },
+  {
+    id: 2,
+    name: 'Ira Hall',
+    nickname: 'Hostel I',
+    seating: 'One seater (Non AC)/Three seater(AC)',
+    capacity: '320 capacity',
+    image: require('../assets/cos.avif'),
+  },
+  {
+    id: 3,
+    name: 'Ananta Hall',
+    nickname: 'Hostel N',
+    seating: 'One seater(AC)/Two seater(AC)',
+    capacity: '500 capacity',
+    image: require('../assets/cos.avif'),
+  },
+  {
+    id: 4,
+    name: 'Dhriti Hall',
+    nickname: 'Hostel PG-I',
+    seating: 'Two seater(AC)',
+    capacity: '928 capacity',
+    image: require('../assets/cos.avif'),
+  },
+  {
+    id: 5,
+    name: 'Avani Hall',
+    nickname: 'Hostel PG-II',
+    seating: 'Two seater(AC)',
+    capacity: '400 capacity',
+    image: require('../assets/cos.avif'),
+  },
+  {
+    id: 6,
+    name: 'Vahni Hall',
+    nickname: '',
+    seating: 'Two seater(AC)',
+    capacity: '400 capacity',
+    image: require('../assets/cos.avif'),
+  },
 ];
 
 export default function GirlsScreen({ theme: themeProp }) {
   const navigation = useNavigation();
   const route = useRoute();
 
-  // Accept theme as a direct prop OR from route.params (when reached via
-  // navigation.navigate('Hostels', { theme })), falling back only if
-  // neither is present.
   const t = themeProp || route.params?.theme || fallbackTheme;
-
   const isDarkTheme = t.textPrimary?.toUpperCase() === '#FFFFFF';
+
+  // Fixed purple for card outline
+  const PURPLE = '#8F5BFF';
 
   return (
     <>
@@ -59,24 +101,37 @@ export default function GirlsScreen({ theme: themeProp }) {
             <View style={{ width: 40 }} />
           </View>
 
-          <ScrollView contentContainerStyle={styles.scrollContent}>
-            <View style={styles.grid}>
-              {rooms.map((room) => (
-                <View
-                  key={room.id}
-                  style={[
-                    styles.card,
-                    {
-                      backgroundColor: t.cardBg,
-                      borderColor: t.accent,
-                    },
-                  ]}
-                >
-                  <Image source={room.image} style={styles.cardImage} />
-                  <Text style={[styles.cardName, { color: t.textPrimary }]}>{room.name}</Text>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            {rooms.map((room) => (
+              <View
+                key={room.id}
+                style={[
+                  styles.hallCard,
+                  {
+                    borderColor: PURPLE, // ✅ fixed purple outline
+                    backgroundColor: t.cardBg,
+                  },
+                ]}
+              >
+                <Image source={room.image} style={styles.hallImage} />
+                <View style={styles.cardContent}>
+                  <Text style={[styles.hallTitle, { color: t.textPrimary }]}>
+                    {room.name}
+                  </Text>
+                  {room.nickname !== '' && (
+                    <Text style={[styles.hallSubtitle, { color: t.textSecondary }]}>
+                      {room.nickname}
+                    </Text>
+                  )}
+                  <Text style={[styles.hallSubtitle, { color: t.textSecondary }]}>
+                    {room.seating}
+                  </Text>
+                  <Text style={[styles.hallSubtitle, { color: t.textSecondary }]}>
+                    {room.capacity}
+                  </Text>
                 </View>
-              ))}
-            </View>
+              </View>
+            ))}
           </ScrollView>
         </SafeAreaView>
       </LinearGradient>
@@ -84,6 +139,7 @@ export default function GirlsScreen({ theme: themeProp }) {
   );
 }
 
+// ---------- STYLES (unchanged, except borderColor is now fixed purple via inline style) ----------
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
@@ -101,32 +157,20 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingBottom: 30,
+    paddingTop: 8,
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  card: {
-    width: '48%',
-    marginBottom: 18,
-    borderRadius: 16,
-    overflow: 'hidden',
+  hallCard: {
+    marginHorizontal: 16,
+    marginBottom: 20,
+    padding: 12,
+    borderRadius: 20,
     borderWidth: 1,
-    paddingBottom: 8,
+    flexDirection: 'row',
+    // borderColor is now applied inline as PURPLE
   },
-  cardImage: {
-    width: '100%',
-    height: 160,
-    resizeMode: 'cover',
-  },
-  cardName: {
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginTop: 8,
-    paddingHorizontal: 4,
-  },
+  hallImage: { width: 120, height: 150, borderRadius: 16 },
+  cardContent: { flex: 1, marginLeft: 14, justifyContent: 'center' },
+  hallTitle: { fontSize: 18, fontWeight: '700' },
+  hallSubtitle: { fontSize: 14, marginTop: 2 },
 });

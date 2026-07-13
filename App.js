@@ -2,8 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Easing } from 'react-native'; // 👈 for easing
-
+import { Easing } from 'react-native'; 
 import LoginScreen from './components/LoginScreen';
 import HomeScreen from './screens/HomeScreen';
 import TeamScreen from './screens/TeamScreen';
@@ -14,10 +13,9 @@ import GirlsScreen from './screens/GirlsScreen';
 import SocietiesScreen from './screens/SocietiesScreen';
 import ConnectScreen from './screens/ConnectScreen';
 import AboutFroshScreen from './screens/AboutFroshScreen';
+import ProfileScreen from './screens/ProfileScreen';
 
 const Stack = createNativeStackNavigator();
-
-// Custom transition config (matches the theme-switch animation)
 const transitionConfig = {
   animation: 'timing',
   config: {
@@ -34,8 +32,7 @@ export default function App() {
           initialRouteName="Login"
           screenOptions={{
             headerShown: false,
-            animation: 'fade', // fallback, but we also use cardStyleInterpolator
-            // Custom scale + fade transition
+            animation: 'fade', 
             cardStyleInterpolator: ({ current }) => ({
               cardStyle: {
                 opacity: current.progress,
@@ -65,6 +62,7 @@ export default function App() {
           <Stack.Screen name="Societies" component={SocietiesScreen} />
           <Stack.Screen name="ConnectUs" component={ConnectScreen} />
           <Stack.Screen name="AboutFrosh" component={AboutFroshScreen} />
+          <Stack.Screen name="Profile" component={ProfileScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

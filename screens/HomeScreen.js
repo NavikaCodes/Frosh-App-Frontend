@@ -122,6 +122,10 @@ export default function HomeScreen() {
       navigation.navigate("AboutFrosh", { theme: isDarkMode ? darkTheme : lightTheme });
       return;
     }
+    if (id === "account") {
+  navigation.navigate("Profile", { theme: isDarkMode ? darkTheme : lightTheme });
+  return;
+}
     Alert.alert("Menu Item", `You tapped "${id}"`);
   };
 
@@ -325,11 +329,10 @@ export default function HomeScreen() {
   );
 }
 
-// ---------- STYLES (unchanged) ----------
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
-    marginTop: 55,
+    marginTop: 50,
     paddingHorizontal: 24,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -348,14 +351,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     elevation: 6,
   },
-  // Outer wrapper: owns the shadow/elevation. No overflow:hidden here —
-  // clipping a view with elevation is what causes the white rectangle bug.
+
   topCardShadowWrap: {
     marginHorizontal: 22,
     marginTop: 18,
     borderRadius: 28,
   },
-  // Inner wrapper: owns the rounded-corner clipping + fill color.
+ 
   topCard: {
     borderRadius: 28,
     height: 80,

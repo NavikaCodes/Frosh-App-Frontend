@@ -1,4 +1,3 @@
-// screens/LightScreen.js
 
 export const lightTheme = {
   bgGradient: ["#FFFFFF", "#EDF6FF", "#D7EAFF"],

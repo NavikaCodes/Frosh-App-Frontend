@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   SafeAreaView,
   View,
@@ -8,6 +8,8 @@ import {
   ScrollView,
   StatusBar,
   Image,
+  Animated,
+  Easing,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -33,8 +35,20 @@ export default function AboutFroshScreen({ theme: themeProp }) {
   const t = themeProp || route.params?.theme || fallbackTheme;
   const isDarkTheme = t.textPrimary?.toUpperCase() === '#FFFFFF';
 
+  // --- Fade‑in animation ---
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
   return (
-    <>
+    <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
       <StatusBar
         translucent
         backgroundColor="transparent"
@@ -66,7 +80,7 @@ export default function AboutFroshScreen({ theme: themeProp }) {
                 { backgroundColor: t.cardBg, borderColor: BRAND_PURPLE, shadowColor: BRAND_PURPLE },
               ]}
             >
-              {/* ✅ Only the logo image – removed the text "FR" "SH" "2026" */}
+              {/* Logo */}
               <View style={styles.logoContainer}>
                 <Image source={require('../assets/logo.png')} style={styles.logoImage} />
               </View>
@@ -136,11 +150,12 @@ export default function AboutFroshScreen({ theme: themeProp }) {
           </ScrollView>
         </SafeAreaView>
       </LinearGradient>
-    </>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
+  // ... (styles exactly as before, unchanged)
   container: { flex: 1 },
   header: {
     flexDirection: 'row',
@@ -150,11 +165,9 @@ const styles = StyleSheet.create({
     marginTop: 50,
     paddingVertical: 8,
   },
-  
   titleRow: { flexDirection: 'row', alignItems: 'center' },
   dot: { width: 6, height: 6, borderRadius: 3, marginHorizontal: 8 },
   title: { fontSize: 18, fontWeight: '800', letterSpacing: 3 },
-
   scrollContent: {
     paddingHorizontal: 16,
     paddingBottom: 40,
@@ -169,25 +182,21 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 12 },
     elevation: 16,
   },
-
-  // Only the logo image – no extra text
   logoContainer: {
     alignItems: 'center',
     marginVertical: 0,
   },
   logoImage: {
-    width: 200,  // adjust as needed
+    width: 200,
     height: 100,
     resizeMode: 'contain',
   },
-
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
   },
   dividerLine: { flex: 1, height: 1 },
-
   sectionRow: {
     flexDirection: 'row',
     marginBottom: 18,
@@ -211,7 +220,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
   },
-
   quoteCard: {
     borderWidth: 1,
     borderRadius: 18,

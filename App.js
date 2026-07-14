@@ -2,7 +2,6 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Easing } from 'react-native';
 
 import LoginScreen from './components/LoginScreen';
 import HomeScreen from './screens/HomeScreen';
@@ -19,14 +18,6 @@ import ScheduleScreen from './screens/ScheduleScreen';
 
 const Stack = createNativeStackNavigator();
 
-const transitionConfig = {
-  animation: 'timing',
-  config: {
-    duration: 300,
-    easing: Easing.inOut(Easing.ease),
-  },
-};
-
 export default function App() {
   return (
     <SafeAreaProvider>
@@ -35,34 +26,37 @@ export default function App() {
           initialRouteName="Login"
           screenOptions={{
             headerShown: false,
-            animation: 'fade',
-            cardStyleInterpolator: ({ current }) => ({
-              cardStyle: {
-                opacity: current.progress,
-                transform: [
-                  {
-                    scale: current.progress.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.96, 1],
-                    }),
-                  },
-                ],
-              },
-            }),
-            transitionSpec: {
-              open: transitionConfig,
-              close: transitionConfig,
-            },
+            animation: 'fade', // default for all screens
           }}
         >
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Home" component={HomeScreen} />
-          <Stack.Screen name="Team" component={TeamScreen} />
-          <Stack.Screen name="Life" component={LifeScreen} />
-          <Stack.Screen name="Hostels" component={HostelsScreen} />
+
+          {/* These four screens slide from the right */}
+          <Stack.Screen
+            name="Team"
+            component={TeamScreen}
+            options={{ animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
+            name="Life"
+            component={LifeScreen}
+            options={{ animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
+            name="Hostels"
+            component={HostelsScreen}
+            options={{ animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
+            name="Societies"
+            component={SocietiesScreen}
+            options={{ animation: 'slide_from_right' }}
+          />
+
+          {/* All other screens use the default 'fade' */}
           <Stack.Screen name="Boys" component={BoysScreen} />
           <Stack.Screen name="Girls" component={GirlsScreen} />
-          <Stack.Screen name="Societies" component={SocietiesScreen} />
           <Stack.Screen name="ConnectUs" component={ConnectScreen} />
           <Stack.Screen name="AboutFrosh" component={AboutFroshScreen} />
           <Stack.Screen name="Profile" component={ProfileScreen} />

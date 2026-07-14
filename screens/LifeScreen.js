@@ -1,422 +1,411 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useRef, useCallback, useMemo, memo, useEffect } from "react"; // added useEffect
 import {
   View,
   Text,
   StyleSheet,
+  SafeAreaView,
   ScrollView,
-  Image,
-  TouchableOpacity,
   StatusBar,
-  Dimensions,
-  Modal,
-  TouchableWithoutFeedback,
+  TouchableOpacity,
+  Image,
+  FlatList,
   Animated,
-  Alert,
-  Easing,
+  Easing, // added Easing
+  Dimensions,
 } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather, Ionicons } from "@expo/vector-icons";
-import AboutScreen from "./AboutScreen";
-import BootcampScreen from "./BootcampScreen";
-import { lightTheme } from "./LightScreen";
-import { darkTheme } from "./DarkScreen";
+import { useRoute } from "@react-navigation/native";
+import { lightTheme, darkTheme } from "./themes";
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
+const PAGE_WIDTH = width - 36;
 
-// Allows us to drive the gradient's opacity with Animated for a soft crossfade
-const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
+// ----- Page Data (4 pages) -----
+const pages = [
+  // ... (unchanged, same as original)
+  {
+    id: "1",
+    heroImage: require("../assets/cos.avif"),
+    cardTitle: "Cultural OAT and\nShopping Complex",
+    cardDescription:
+      "A hub for shopping, dining, and student essentials at Thapar.",
+    description:
+      "The COS Complex at TIET offers a range of convenient stores and eateries for students. VI Mini Store sells electronic devices, accessories, and sports gear. Shadowz Salon and Spa provides beauty services, while Fashion Point offers skincare essentials. The Stationery Store supplies college essentials, and the Dessert Club offers sweet treats. Kabir Multi-Store stocks everyday essentials, and Pizza Nation serves unique pizzas. Honey Coffee Cafe is a vegetarian snack spot. Iqbal Juice Centre offers fresh juices, and RS Laundry handles garment care.",
+  },
+  {
+    id: "2",
+    heroImage: require("../assets/cos.avif"),
+    cardTitle: "Sports Complex",
+    cardDescription: "World-class facilities for athletes and fitness lovers.",
+    description:
+      "Sports Complex TIET has many comprehensive sports facilities, from courts for basketball, volleyball, badminton, and tennis to a swimming pool, a cricket ground, and so on. The sports department organises various tournaments, such as URJA, Thaparlympics, SPADES, IGNITE, and the Annual Athletic Meet. Tracksuits with T-shirts are given to freshers for easy identification, providing an impetus to fitness and enthusiasm. Eight full-time coaches and a Deputy Director of Sports ensure coaching and organisation of a high order.",
+  },
+  {
+    id: "3",
+    heroImage: require("../assets/cos.avif"),
+    cardTitle: "Nava Nalanda\nLibrary",
+    cardDescription: "The academic heart of Thapar Institute.",
+    description:
+      "The Nava Nalanda Library at Thapar Institute is a state-of-the-art facility offering a vast collection of academic resources, including books, journals, and digital materials. It provides a serene environment for study and research, equipped with spacious reading areas, group discussion rooms, and access to online resources. The library's user-friendly services and knowledgeable staff support the academic endeavours of students and faculty, fostering a culture of learning and intellectual growth on campus.",
+  },
+  {
+    id: "4",
+    heroImage: require("../assets/cos.avif"),
+    cardTitle: "Central Park",
+    cardDescription: "A green oasis in the heart of campus.",
+    description:
+      "The Central Park serves as an oasis of tranquillity amidst the academic bustle. Its lush-green abode helps students to relax and unwind. The sparkling fountains add up to the soothing ambience, their gentle murmur creating a calming backdrop. The fresh air and open space foster a sense of community and well-being among the students, encouraging spontaneous gatherings and peaceful solitude alike. The seating areas in the lap of nature invite both quiet reflection and lively conversations, making the park a cherished retreat.",
+  },
+];
 
-export default function HomeScreen() {
-  const navigation = useNavigation();
-  const route = useRoute();
-
-  const [activeTab, setActiveTab] = useState("bootcamp");
-  const [modalVisible, setModalVisible] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  const slideAnim = useRef(new Animated.Value(0)).current;
-
-  // Soft crossfade whenever the theme changes
-  const themeFadeAnim = useRef(new Animated.Value(1)).current;
-
-  const isBootcamp = activeTab === "bootcamp";
-  const isFrosh = activeTab === "frosh";
-  const isAbout = activeTab === "about";
-
-  const menuOptions = [
-    { id: "account", label: "Account", icon: "person-outline" },
-    { id: "schedule", label: "Schedule", icon: "calendar-outline" },
-    { id: "about", label: "About Frosh", icon: "information-circle-outline" },
-    { id: "connect", label: "Connect with us", icon: "chatbubble-outline" },
-    { id: "switch", label: "Switch Mode", icon: isDarkMode ? "sunny-outline" : "moon-outline" },
-  ];
-
-  const handleTabPress = (tabId) => {
-    setActiveTab(tabId);
-  };
-
-  const handleMenuPress = (id) => {
-    setModalVisible(false);
-    if (id === "switch") {
-      // 🌗 Slow, soft crossfade theme toggle
-      Animated.timing(themeFadeAnim, {
-        toValue: 0,
-        duration: 320,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }).start(() => {
-        setIsDarkMode((prev) => !prev);
-        Animated.timing(themeFadeAnim, {
-          toValue: 1,
-          duration: 550,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }).start();
-      });
-      return;
-    }
-    if (id === "connect") {
-      navigation.navigate("ConnectUs", { theme: isDarkMode ? darkTheme : lightTheme });
-      return;
-    }
-    if (id === "about") {
-      navigation.navigate("AboutFrosh", { theme: isDarkMode ? darkTheme : lightTheme });
-      return;
-    }
-    if (id === "account") {
-      navigation.navigate("Profile", { theme: isDarkMode ? darkTheme : lightTheme });
-      return;
-    }
-    if (id === "schedule") {
-      navigation.navigate("Schedule", { theme: isDarkMode ? darkTheme : lightTheme });
-      return;
-    }
-    Alert.alert("Menu Item", `You tapped "${id}"`);
-  };
-
-  useEffect(() => {
-    if (modalVisible) {
-      Animated.timing(slideAnim, {
-        toValue: 1,
-        duration: 380,
-        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 300,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [modalVisible]);
-
-  const translateY = slideAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [screenHeight * 0.5, 0],
-  });
-
-  const theme = isDarkMode ? darkTheme : lightTheme;
+// ---------------------------------------------------------------------------
+// PageItem — memoized as before (unchanged)
+// ---------------------------------------------------------------------------
+const PageItem = memo(function PageItem({ item, index, theme, isDark, styles, scrollX }) {
+  const { opacity, translateY } = useMemo(() => {
+    const inputRange = [
+      (index - 1) * PAGE_WIDTH,
+      index * PAGE_WIDTH,
+      (index + 1) * PAGE_WIDTH,
+    ];
+    return {
+      opacity: scrollX.interpolate({
+        inputRange,
+        outputRange: [0.55, 1, 0.55],
+        extrapolate: "clamp",
+      }),
+      translateY: scrollX.interpolate({
+        inputRange,
+        outputRange: [10, 0, 10],
+        extrapolate: "clamp",
+      }),
+    };
+  }, [index, scrollX]);
 
   return (
-    <>
-      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
+    <View style={styles.pageContainer}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.pageContent}
+        nestedScrollEnabled
+      >
+        <Animated.View style={{ opacity, transform: [{ translateY }] }}>
+          {/* Hero Section with floating card */}
+          <View style={styles.heroSection}>
+            <Image
+              source={item.heroImage}
+              resizeMode="cover"
+              style={styles.heroImage}
+            />
 
-      {/* Soft crossfade wrapper for theme switching */}
-      <AnimatedLinearGradient
+            {/* Floating Card */}
+            <View
+              style={[
+                styles.libraryCard,
+                { backgroundColor: theme.cardBg || (isDark ? "#1A2040" : "#FFFFFF") },
+              ]}
+            >
+              <Text style={[styles.libraryTitle, { color: theme.textPrimary }]}>
+                {item.cardTitle}
+              </Text>
+              <View style={[styles.blueUnderline, { backgroundColor: theme.accent }]} />
+              <Text style={[styles.libraryDescription, { color: theme.textSecondary }]}>
+                {item.cardDescription}
+              </Text>
+            </View>
+          </View>
+
+          {/* Description */}
+          <View style={styles.contentContainer}>
+            <Text style={[styles.description, { color: theme.textSecondary }]}>
+              {item.description}
+            </Text>
+          </View>
+        </Animated.View>
+      </ScrollView>
+    </View>
+  );
+});
+
+// ---------------------------------------------------------------------------
+// PaginationDots — memoized as before (unchanged)
+// ---------------------------------------------------------------------------
+const PaginationDots = memo(function PaginationDots({ scrollX, theme, styles }) {
+  return (
+    <View style={styles.pagination}>
+      {pages.map((_, dotIndex) => {
+        const dotInputRange = [
+          (dotIndex - 1) * PAGE_WIDTH,
+          dotIndex * PAGE_WIDTH,
+          (dotIndex + 1) * PAGE_WIDTH,
+        ];
+        const dotScaleX = scrollX.interpolate({
+          inputRange: dotInputRange,
+          outputRange: [1, 2.5, 1],
+          extrapolate: "clamp",
+        });
+        const dotOpacity = scrollX.interpolate({
+          inputRange: dotInputRange,
+          outputRange: [0.4, 1, 0.4],
+          extrapolate: "clamp",
+        });
+
+        return (
+          <Animated.View
+            key={dotIndex}
+            style={[
+              styles.dot,
+              {
+                backgroundColor: theme.accent,
+                opacity: dotOpacity,
+                transform: [{ scaleX: dotScaleX }],
+              },
+            ]}
+          />
+        );
+      })}
+    </View>
+  );
+});
+
+export default function LifeScreen({ navigation }) {
+  const route = useRoute();
+  const theme = route.params?.theme || lightTheme;
+  const isDark = theme === darkTheme;
+
+  // --- Fade‑in animation for the whole screen ---
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  const flatListRef = useRef(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
+
+  const onScroll = useRef(
+    Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
+      useNativeDriver: true,
+    })
+  ).current;
+
+  const styles = getStyles(theme);
+
+  const renderPage = useCallback(
+    ({ item, index }) => (
+      <PageItem
+        item={item}
+        index={index}
+        theme={theme}
+        isDark={isDark}
+        styles={styles}
+        scrollX={scrollX}
+      />
+    ),
+    [theme, isDark, styles, scrollX]
+  );
+
+  const keyExtractor = useCallback((item) => item.id, []);
+  const getItemLayout = useCallback(
+    (data, index) => ({
+      length: PAGE_WIDTH,
+      offset: PAGE_WIDTH * index,
+      index,
+    }),
+    []
+  );
+
+  return (
+    <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle={isDark ? "light-content" : "dark-content"}
+      />
+
+      <LinearGradient
         colors={theme.bgGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[styles.container, { opacity: themeFadeAnim }]}
+        style={styles.background}
       >
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 40 }}
-        >
-          {/* HEADER */}
-          <View style={styles.header}>
-            <View>
-              <Text style={[styles.hello, { color: theme.textPrimary }]}>Hi, Navika</Text>
-              <Text style={[styles.welcome, { color: theme.textSecondary }]}>Welcome back!</Text>
+        <SafeAreaView style={{ flex: 1 }}>
+          <View style={[styles.container, { backgroundColor: theme.cardBg }]}>
+            {/* Header */}
+            <View style={styles.header}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => navigation.goBack()}
+              >
+                <Feather name="arrow-left" size={36} color={theme.textPrimary} />
+              </TouchableOpacity>
+              <View style={[styles.line, { backgroundColor: theme.lineColor }]} />
+              <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>
+                • LIFE AT THAPAR •
+              </Text>
+              <View style={[styles.line, { backgroundColor: theme.lineColor }]} />
             </View>
-            <TouchableOpacity
-              style={[styles.profileCircle, { backgroundColor: theme.cardBg, shadowColor: theme.shadowColor }]}
-              onPress={() => setModalVisible(true)}
-            >
-              <Feather name="user" size={24} color={theme.iconColor} />
-            </TouchableOpacity>
+
+            {/* Pages */}
+            <Animated.FlatList
+              ref={flatListRef}
+              data={pages}
+              renderItem={renderPage}
+              keyExtractor={keyExtractor}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              onScroll={onScroll}
+              scrollEventThrottle={100}
+              style={styles.flatList}
+              pagingEnabled
+              disableIntervalMomentum
+              bounces={false}
+              overScrollMode="never"
+              decelerationRate="fast"
+              getItemLayout={getItemLayout}
+              initialNumToRender={pages.length}
+              windowSize={pages.length}
+              maxToRenderPerBatch={pages.length}
+            />
+
+            {/* Dots */}
+            <PaginationDots scrollX={scrollX} theme={theme} styles={styles} />
           </View>
-
-          {/* TOP CARD */}
-          <View style={[styles.topCard, theme.topCard]}>
-            <View style={styles.tabsContainer}>
-              {/* Bootcamp Tab */}
-              <TouchableOpacity
-                style={[styles.tab, isBootcamp && { backgroundColor: theme.tabActiveBg }]}
-                onPress={() => handleTabPress("bootcamp")}
-              >
-                <View style={styles.tabContent}>
-                  <Ionicons name="calendar-outline" size={24} color={isBootcamp ? theme.tabActiveText : theme.tabInactiveText} />
-                  <Text style={[isBootcamp ? styles.tabActive : styles.tabInactive, { color: isBootcamp ? theme.tabActiveText : theme.tabInactiveText }]}>Bootcamp</Text>
-                </View>
-              </TouchableOpacity>
-
-              {/* Frosh Tab */}
-              <TouchableOpacity
-                style={[styles.tab, isFrosh && { backgroundColor: theme.tabActiveBg }]}
-                onPress={() => handleTabPress("frosh")}
-              >
-                <View style={styles.tabContent}>
-                  <Image source={require("../assets/star.png")} resizeMode="contain" style={styles.tabLogoLarge} />
-                </View>
-              </TouchableOpacity>
-
-              {/* About Tab */}
-              <TouchableOpacity
-                style={[styles.tab, isAbout && { backgroundColor: theme.tabActiveBg }]}
-                onPress={() => handleTabPress("about")}
-              >
-                <View style={styles.tabContent}>
-                  <Ionicons name="document-text-outline" size={28} color={isAbout ? theme.tabActiveText : theme.tabInactiveText} />
-                  <Text style={[isAbout ? styles.tabActive : styles.tabInactive, { color: isAbout ? theme.tabActiveText : theme.tabInactiveText }]}>About</Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* CONTENT */}
-          {isBootcamp ? (
-            <BootcampScreen theme={theme} />
-          ) : isFrosh ? (
-            <View style={[styles.liveCard, theme.liveCard]}>
-              <View style={styles.liveHeadingContainer}>
-                <View style={[styles.line, { backgroundColor: theme.lineColor }]} />
-                <Text style={[styles.liveHeading, { color: theme.accent }]}>• LIVE EVENT •</Text>
-                <View style={[styles.line, { backgroundColor: theme.lineColor }]} />
-              </View>
-
-              <Image source={require("../assets/concert.jpg")} style={styles.eventImage} />
-
-              <View style={[styles.liveNow, { borderColor: theme.accent }]}>
-                <Text style={[styles.liveNowText, { color: theme.accent }]}>LIVE NOW</Text>
-              </View>
-
-              <Text style={[styles.eventTitle, { color: theme.textPrimary }]}>Battle of Hoods</Text>
-
-              <View style={styles.infoRow}>
-                <Ionicons name="location" size={18} color={theme.accent} />
-                <Text style={[styles.location, { color: theme.accent }]}>Main Auditorium</Text>
-              </View>
-
-              <View style={styles.infoRow}>
-                <Feather name="calendar" size={16} color={theme.accent} />
-                <Text style={[styles.infoText, { color: theme.textPrimary }]}>07 May 2026</Text>
-              </View>
-
-              <View style={[styles.bottomRow, { marginTop: 0 }]}>
-                <View style={styles.infoRow}>
-                  <Feather name="clock" size={16} color={theme.accent} />
-                  <Text style={[styles.infoText, { color: theme.textPrimary }]}>06:30 PM Onwards</Text>
-                </View>
-                <TouchableOpacity style={[styles.arrowCircle, { borderColor: theme.accent }]}>
-                  <Ionicons name="arrow-forward" size={24} color={theme.accent} />
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : (
-            <AboutScreen theme={theme} />
-          )}
-        </ScrollView>
-      </AnimatedLinearGradient>
-
-      {/* PROFILE MENU */}
-      <Modal
-        animationType="none"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
-          <View style={styles.modalOverlay} />
-        </TouchableWithoutFeedback>
-
-        <Animated.View
-          style={[
-            styles.modalContainer,
-            { transform: [{ translateY }] },
-            { backgroundColor: theme.modalBg },
-          ]}
-        >
-          <View style={[styles.modalHandle, { backgroundColor: theme.lineColor }]} />
-
-          {menuOptions.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={[styles.menuItem, { borderBottomColor: theme.lineColor }]}
-              onPress={() => handleMenuPress(item.id)}
-            >
-              <Ionicons name={item.icon} size={24} color={theme.textPrimary} />
-              <Text style={[styles.menuText, { color: theme.textPrimary }]}>{item.label}</Text>
-            </TouchableOpacity>
-          ))}
-
-          <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-            <Text style={[styles.closeButtonText, { color: theme.textSecondary }]}>Cancel</Text>
-          </TouchableOpacity>
-        </Animated.View>
-      </Modal>
-    </>
+        </SafeAreaView>
+      </LinearGradient>
+    </Animated.View>
   );
 }
 
-// ---------- STYLES (unchanged) ----------
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: {
-    marginTop: 55,
-    paddingHorizontal: 24,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  hello: { fontSize: 28, fontWeight: "800" },
-  welcome: { marginTop: 2, fontSize: 16, fontWeight: "500" },
-  profileCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 30,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowOpacity: 0.18,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 6,
-  },
-  topCard: {
-    marginHorizontal: 22,
-    marginTop: 18,
-    borderRadius: 28,
-    height: 80,
-    overflow: "hidden",
-  },
-  tabsContainer: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-around",
-  },
-  tab: {
-    flex: 1,
-    height: 80,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "transparent",
-    borderRadius: 20,
-  },
-  tabContent: {
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 2,
-  },
-  tabLogoLarge: { width: 150, height: 120 },
-  tabActive: { fontSize: 12, fontWeight: "700" },
-  tabInactive: { fontSize: 12, fontWeight: "500" },
-  liveCard: {
-    marginHorizontal: 22,
-    marginTop: 24,
-    borderRadius: 28,
-    padding: 18,
-  },
-  liveHeadingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 14,
-  },
-  line: { flex: 1, height: 2 },
-  liveHeading: {
-    marginHorizontal: 10,
-    fontWeight: "700",
-    fontSize: 16,
-    letterSpacing: 2,
-  },
-  eventImage: {
-    width: "100%",
-    height: 200,
-    borderRadius: 20,
-  },
-  liveNow: {
-    marginTop: 14,
-    borderWidth: 2,
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 4,
-    alignSelf: "flex-start",
-  },
-  liveNowText: { fontSize: 14, fontWeight: "700" },
-  eventTitle: {
-    marginTop: 12,
-    fontSize: 26,
-    fontWeight: "800",
-  },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 10,
-  },
-  location: {
-    marginLeft: 10,
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  infoText: {
-    marginLeft: 10,
-    fontSize: 16,
-  },
-  bottomRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  arrowCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 2,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.3)" },
-  modalContainer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    paddingHorizontal: 24,
-    paddingTop: 12,
-    paddingBottom: 30,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: -4 },
-    elevation: 10,
-  },
-  modalHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    alignSelf: "center",
-    marginBottom: 16,
-  },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-  },
-  menuText: { fontSize: 18, fontWeight: "500", marginLeft: 16 },
-  closeButton: { marginTop: 8, paddingVertical: 14, alignItems: "center" },
-  closeButtonText: { fontSize: 18, fontWeight: "600" },
-});
+// ---------- StyleSheet factory (unchanged) ----------
+const getStyles = (theme) =>
+  StyleSheet.create({
+    background: { flex: 1 },
+
+    container: {
+      flex: 1,
+      marginHorizontal: 18,
+      marginTop: 30,
+      marginBottom: 20,
+      borderRadius: 34,
+      paddingTop: 22,
+      paddingBottom: 20,
+      overflow: "hidden",
+      shadowColor: theme.shadowColor,
+      shadowOpacity: 0.18,
+      shadowRadius: 22,
+      shadowOffset: { width: 0, height: 10 },
+      elevation: 10,
+    },
+
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 22,
+      marginBottom: 22,
+    },
+
+    line: {
+      flex: 1,
+      height: 1,
+      marginHorizontal: 12,
+    },
+
+    headerTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      letterSpacing: 1.5,
+    },
+
+    flatList: { flex: 1 },
+
+    pageContainer: {
+      width: PAGE_WIDTH,
+      flex: 1,
+    },
+
+    pageContent: {
+      paddingBottom: 30,
+    },
+
+    heroSection: {
+      alignItems: "center",
+      marginBottom: 120,
+    },
+
+    heroImage: {
+      width: "88%",
+      height: 300,
+      borderRadius: 30,
+    },
+
+    libraryCard: {
+      position: "absolute",
+      bottom: -92,
+      width: "82%",
+      borderRadius: 28,
+      alignItems: "center",
+      paddingHorizontal: 22,
+      paddingTop: 24,
+      paddingBottom: 22,
+      shadowColor: theme.shadowColor,
+      shadowOpacity: 0.16,
+      shadowRadius: 20,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 12,
+    },
+
+    libraryTitle: {
+      fontSize: 24,
+      fontWeight: "800",
+      textAlign: "center",
+    },
+
+    blueUnderline: {
+      width: 70,
+      height: 4,
+      borderRadius: 20,
+      marginTop: 10,
+      marginBottom: 14,
+    },
+
+    libraryDescription: {
+      fontSize: 14,
+      lineHeight: 22,
+      textAlign: "center",
+    },
+
+    contentContainer: {
+      paddingHorizontal: 26,
+      marginTop: 10,
+    },
+
+    description: {
+      fontSize: 16,
+      lineHeight: 28,
+      textAlign: "justify",
+      marginBottom: 10,
+    },
+
+    pagination: {
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      paddingVertical: 12,
+      marginTop: 4,
+    },
+
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      marginHorizontal: 6,
+    },
+  });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react'; // added useRef, useEffect
 import {
   SafeAreaView,
   View,
@@ -10,6 +10,8 @@ import {
   StatusBar,
   FlatList,
   Dimensions,
+  Animated, // added
+  Easing,   // added
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -78,6 +80,18 @@ export default function TeamScreen({ theme: themeProp }) {
   const t = themeProp || route.params?.theme || fallbackTheme;
   const isDarkTheme = t.textPrimary?.toUpperCase() === '#FFFFFF';
   const [activeTab, setActiveTab] = useState('faculty');
+
+  // --- Fade‑in animation ---
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   const renderFacultyItem = ({ item }) => (
     <View style={styles.gridItem}>
@@ -165,7 +179,7 @@ export default function TeamScreen({ theme: themeProp }) {
   };
 
   return (
-    <>
+    <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
       <StatusBar
         translucent
         backgroundColor="transparent"
@@ -209,7 +223,7 @@ export default function TeamScreen({ theme: themeProp }) {
           <View style={{ flex: 1 }}>{renderContent()}</View>
         </SafeAreaView>
       </LinearGradient>
-    </>
+    </Animated.View>
   );
 }
 

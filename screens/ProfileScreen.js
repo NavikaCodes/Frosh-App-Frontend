@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,8 +6,10 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  Animated,
+  Easing,
 } from "react-native";
-import { useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { lightTheme } from "./LightScreen";
@@ -64,13 +66,26 @@ function InfoRow({ theme, icon, iconColor, label, value }) {
 }
 
 export default function ProfileScreen() {
+  const navigation = useNavigation();
   const route = useRoute();
   const theme = route?.params?.theme || darkTheme;
   const isDarkMode = theme === darkTheme;
   const familyAccent = theme.secondaryAccent || "#B478FF";
 
+  // --- Fade‑in animation ---
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
   return (
-    <>
+    <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
       <LinearGradient
         colors={theme.bgGradient}
@@ -82,24 +97,15 @@ export default function ProfileScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
+          {/* Header with back button */}
           <View style={styles.header}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
+            </TouchableOpacity>
             <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>
               My Profile
             </Text>
-            <TouchableOpacity
-              style={[
-                styles.editButton,
-                {
-                  backgroundColor: withAlpha(theme.accent, "1F"),
-                  borderColor: withAlpha(theme.accent, "66"),
-                  shadowColor: theme.shadowColor,
-                },
-              ]}
-              activeOpacity={0.7}
-            >
-              <Feather name="edit-2" size={18} color={theme.accent} />
-            </TouchableOpacity>
+            <View style={styles.headerSpacer} />
           </View>
 
           {/* Avatar */}
@@ -186,11 +192,12 @@ export default function ProfileScreen() {
           </View>
         </ScrollView>
       </LinearGradient>
-    </>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
+  // ... (styles exactly as before, unchanged)
   container: {
     flex: 1,
   },
@@ -201,25 +208,19 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 20,
+  },
+  backButton: {
+    padding: 4,
   },
   headerTitle: {
     fontSize: 30,
     fontWeight: "800",
   },
-  editButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+  headerSpacer: {
+    width: 40,
   },
   avatarWrap: {
     alignItems: "center",

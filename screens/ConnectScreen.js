@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   SafeAreaView,
   View,
@@ -11,6 +11,8 @@ import {
   TouchableWithoutFeedback,
   Linking,
   Dimensions,
+  Animated,
+  Easing,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,7 +21,6 @@ import { Feather } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
 
-// Fallback theme (used only if no theme is passed at all)
 const fallbackTheme = {
   bgGradient: ['#020B18', '#061528', '#041220'],
   textPrimary: '#FFFFFF',
@@ -50,10 +51,21 @@ export default function HelpSupportScreen({ theme: themeProp }) {
   const route = useRoute();
 
   const t = themeProp || route.params?.theme || fallbackTheme;
-
   const isDarkTheme = t.textPrimary?.toUpperCase() === '#FFFFFF';
 
   const [modalVisible, setModalVisible] = useState(false);
+
+  // --- Fade‑in animation ---
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   const handlePress = (item) => {
     if (item.id === 'phone') {
@@ -65,7 +77,7 @@ export default function HelpSupportScreen({ theme: themeProp }) {
 
   const renderIcon = (item) => {
     const color = t.textPrimary;
-    const size = 48; // larger icon
+    const size = 48;
     if (item.iconSet === 'Feather') {
       return <Feather name={item.icon} size={size} color={color} />;
     }
@@ -73,7 +85,7 @@ export default function HelpSupportScreen({ theme: themeProp }) {
   };
 
   return (
-    <>
+    <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
       <StatusBar
         translucent
         backgroundColor="transparent"
@@ -164,11 +176,12 @@ export default function HelpSupportScreen({ theme: themeProp }) {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-    </>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
+  // ... (styles exactly as before, unchanged)
   container: { flex: 1 },
   header: {
     flexDirection: 'row',

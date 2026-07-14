@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
+  Animated,
+  Easing,
   Dimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -19,7 +21,6 @@ const AboutScreen = ({ theme }) => {
       id: 'team',
       title: 'OUR TEAM',
       subtitle: 'Meet the minds behind Frosh',
-      // ✅ FIX: now navigates to Team with theme
       onPress: () => navigation.navigate('Team', { theme }),
     },
     {
@@ -42,8 +43,76 @@ const AboutScreen = ({ theme }) => {
     },
   ];
 
+  // Entrance animations
+  const fadeAnims = useRef(sections.map(() => new Animated.Value(0))).current;
+  const translateAnims = useRef(sections.map(() => new Animated.Value(14))).current;
+
+  // Press feedback animations
+  const scaleAnims = useRef(sections.map(() => new Animated.Value(1))).current;
+  const chevronAnims = useRef(sections.map(() => new Animated.Value(0))).current;
+
+  useEffect(() => {
+    const entrance = sections.map((_, i) =>
+      Animated.parallel([
+        Animated.timing(fadeAnims[i], {
+          toValue: 1,
+          duration: 380,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateAnims[i], {
+          toValue: 0,
+          duration: 380,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    Animated.stagger(70, entrance).start();
+  }, []);
+
+  // --- Softer, "water-like" press feedback ---
+  const handlePressIn = (i) => {
+    Animated.parallel([
+      Animated.spring(scaleAnims[i], {
+        toValue: 0.97,
+        speed: 20,
+        bounciness: 2,
+        useNativeDriver: true,
+      }),
+      Animated.timing(chevronAnims[i], {
+        toValue: 1,
+        duration: 150,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const handlePressOut = (i) => {
+    Animated.parallel([
+      Animated.spring(scaleAnims[i], {
+        toValue: 1,
+        speed: 16,
+        bounciness: 3,
+        useNativeDriver: true,
+      }),
+      Animated.timing(chevronAnims[i], {
+        toValue: 0,
+        duration: 180,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: theme.cardBg }, // 🔥 fixed white flash
+      ]}
+    >
       <View
         style={[
           styles.bigCard,
@@ -59,28 +128,58 @@ const AboutScreen = ({ theme }) => {
         <View style={[styles.divider, { backgroundColor: theme.lineColor }]} />
 
         {sections.map((item, index) => (
-          <TouchableOpacity
+          <Animated.View
             key={item.id}
-            style={[
-              styles.optionRow,
-              index < sections.length - 1 && {
-                borderBottomWidth: 1,
-                borderBottomColor: theme.lineColor,
-              },
-            ]}
-            onPress={item.onPress || (() => {})}
-            activeOpacity={0.7}
+            style={{
+              opacity: fadeAnims[index],
+              transform: [{ translateY: translateAnims[index] }],
+            }}
           >
-            <View style={styles.optionTextContainer}>
-              <Text style={[styles.optionTitle, { color: theme.textPrimary }]}>
-                {item.title}
-              </Text>
-              <Text style={[styles.optionSubtitle, { color: theme.textSecondary }]}>
-                {item.subtitle}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={22} color={theme.textSecondary} />
-          </TouchableOpacity>
+            <Pressable
+              onPress={item.onPress}
+              onPressIn={() => handlePressIn(index)}
+              onPressOut={() => handlePressOut(index)}
+              android_ripple={{ color: theme.lineColor, borderless: false }}
+            >
+              <Animated.View
+                style={[
+                  styles.optionRow,
+                  index < sections.length - 1 && {
+                    borderBottomWidth: 1,
+                    borderBottomColor: theme.lineColor,
+                  },
+                  { transform: [{ scale: scaleAnims[index] }] },
+                ]}
+              >
+                <View style={styles.optionTextContainer}>
+                  <Text style={[styles.optionTitle, { color: theme.textPrimary }]}>
+                    {item.title}
+                  </Text>
+                  <Text style={[styles.optionSubtitle, { color: theme.textSecondary }]}>
+                    {item.subtitle}
+                  </Text>
+                </View>
+                <Animated.View
+                  style={{
+                    transform: [
+                      {
+                        translateX: chevronAnims[index].interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0, 4],
+                        }),
+                      },
+                    ],
+                  }}
+                >
+                  <Ionicons
+                    name="chevron-forward"
+                    size={22}
+                    color={theme.textSecondary}
+                  />
+                </Animated.View>
+              </Animated.View>
+            </Pressable>
+          </Animated.View>
         ))}
       </View>
     </View>
@@ -92,8 +191,10 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 20,
+    // backgroundColor is now set dynamically
   },
   bigCard: {
+    flex: 1,
     borderRadius: 28,
     paddingVertical: 20,
     paddingHorizontal: 20,

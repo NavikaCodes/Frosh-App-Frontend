@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,19 +7,16 @@ import {
   Image,
   TouchableOpacity,
   StatusBar,
+  Animated,
+  Easing,
 } from "react-native";
-import { useRoute } from "@react-navigation/native";
+import { useRoute, useNavigation } from "@react-navigation/native"; // <-- added useNavigation
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { lightTheme } from "./LightScreen";
 import { darkTheme } from "./DarkScreen";
 
-// If you're not using Expo, swap these for react-native-vector-icons imports:
-// import Feather from 'react-native-vector-icons/Feather';
-// import Ionicons from 'react-native-vector-icons/Ionicons';
-// import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-
-// ---- Sample data — wire these up to your real event source later ----
+// ---- Sample data (unchanged) ----
 const LIVE_EVENTS = [
   {
     id: "l1",
@@ -74,6 +71,7 @@ function withAlpha(hex, alpha) {
   return `${hex}${alpha}`;
 }
 
+// ---- Card components (unchanged) ----
 function LiveEventCard({ theme, liveAccent, event }) {
   return (
     <View
@@ -115,8 +113,6 @@ function LiveEventCard({ theme, liveAccent, event }) {
       </View>
 
       <View style={[styles.divider, { backgroundColor: theme.lineColor }]} />
-
-      
     </View>
   );
 }
@@ -215,14 +211,12 @@ function PastEventCard({ theme, liveAccent, event }) {
 
 export default function ScheduleScreen() {
   const route = useRoute();
+  const navigation = useNavigation(); // <-- added for back navigation
   const theme = route?.params?.theme || darkTheme;
   const isDarkMode = theme === darkTheme;
-
-  // Purple accent used for the Live tab, FROSH labels, and Watch Live button —
-  // falls back to a soft violet if the active theme doesn't define one.
   const liveAccent = theme.liveAccent || "#A855F7";
 
-  const [activeTab, setActiveTab] = useState("live"); // "live" | "upcoming" | "past"
+  const [activeTab, setActiveTab] = useState("live");
 
   const TABS = [
     { id: "live", label: "Live" },
@@ -246,8 +240,20 @@ export default function ScheduleScreen() {
     return <MaterialCommunityIcons name="history" size={17} color={color} />;
   };
 
+  // --- Fade‑in animation ---
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
   return (
-    <>
+    <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
       <LinearGradient
         colors={theme.bgGradient}
@@ -259,10 +265,16 @@ export default function ScheduleScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
-          <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>
-            Schedule
-          </Text>
+          {/* Header with back button */}
+          <View style={styles.headerRow}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
+            </TouchableOpacity>
+            <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>
+              Schedule
+            </Text>
+            <View style={styles.headerSpacer} />
+          </View>
           <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
             Stay updated with every Frosh event.
           </Text>
@@ -379,7 +391,7 @@ export default function ScheduleScreen() {
           )}
         </ScrollView>
       </LinearGradient>
-    </>
+    </Animated.View>
   );
 }
 
@@ -387,17 +399,33 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingTop: 60,        // adjusted to accommodate back button
     paddingBottom: 40,
+  },
+  // New header row with back button
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  backButton: {
+    padding: 4,
   },
   headerTitle: {
     fontSize: 32,
     fontWeight: "800",
+    flex: 1,               // takes available space
+    textAlign: "center",   // keeps it centered
+  },
+  headerSpacer: {
+    width: 40,             // balances the back button width
   },
   headerSubtitle: {
     fontSize: 15,
     marginTop: 4,
     marginBottom: 22,
+    textAlign: "center",
   },
   tabsRow: {
     flexDirection: "row",
@@ -435,7 +463,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 10,
   },
-  // Live card (large, image on top)
   card: {
     borderRadius: 22,
     borderWidth: 1,
@@ -505,20 +532,6 @@ const styles = StyleSheet.create({
     height: 1,
     marginVertical: 12,
   },
-  watchLiveButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderWidth: 1.2,
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-  },
-  watchLiveText: {
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  // Row cards (upcoming / past)
   rowCard: {
     flexDirection: "row",
     alignItems: "center",

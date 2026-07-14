@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react'; // added useRef, useEffect, Animated, Easing
 import {
   SafeAreaView,
   View,
@@ -11,6 +11,8 @@ import {
   Modal,
   TouchableWithoutFeedback,
   Dimensions,
+  Animated,
+  Easing,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,7 +21,7 @@ import Icon from '@expo/vector-icons/Ionicons';
 
 const { width, height } = Dimensions.get('window');
 
-// Fallback dark theme (used only if no theme is passed at all)
+// Fallback dark theme
 const fallbackTheme = {
   bgGradient: ['#020B18', '#061528', '#041220'],
   textPrimary: '#FFFFFF',
@@ -59,18 +61,23 @@ export default function SocietiesScreen({ theme: themeProp }) {
   const navigation = useNavigation();
   const route = useRoute();
 
-  // Theme can arrive either as a direct prop OR (more commonly, when
-  // reached via navigation.navigate('Societies', { theme })) inside
-  // route.params. Check both, and only fall back to the hardcoded
-  // theme if neither is present.
   const t = themeProp || route.params?.theme || fallbackTheme;
-
-  // Figure out if we're in a "dark" theme so we can adjust the
-  // status bar and blur tint automatically instead of hardcoding them.
   const isDarkTheme = t.textPrimary?.toUpperCase() === '#FFFFFF';
 
   const [activeCategory, setActiveCategory] = useState('tech');
   const [selectedSociety, setSelectedSociety] = useState(null);
+
+  // --- Fade‑in animation ---
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   const filtered = societies.filter(s => s.category === activeCategory);
 
@@ -78,16 +85,13 @@ export default function SocietiesScreen({ theme: themeProp }) {
   const closePopup = () => setSelectedSociety(null);
 
   return (
-    <>
+    <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
       <StatusBar
         translucent
         backgroundColor="transparent"
         barStyle={isDarkTheme ? 'light-content' : 'dark-content'}
       />
-      <LinearGradient
-        colors={t.bgGradient}
-        style={styles.container}
-      >
+      <LinearGradient colors={t.bgGradient} style={styles.container}>
         <SafeAreaView style={{ flex: 1 }}>
           <View style={styles.header}>
             <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
@@ -193,7 +197,7 @@ export default function SocietiesScreen({ theme: themeProp }) {
           </BlurView>
         </TouchableWithoutFeedback>
       </Modal>
-    </>
+    </Animated.View>
   );
 }
 

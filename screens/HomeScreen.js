@@ -14,7 +14,7 @@ import {
   Alert,
   Easing,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import AboutScreen from "./AboutScreen";
@@ -24,15 +24,20 @@ import { darkTheme } from "./DarkScreen";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
+// Allows us to drive the gradient's opacity with Animated for a soft crossfade
+const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
+
 export default function HomeScreen() {
   const navigation = useNavigation();
+  const route = useRoute();
+
   const [activeTab, setActiveTab] = useState("bootcamp");
   const [modalVisible, setModalVisible] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const slideAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const opacityAnim = useRef(new Animated.Value(1)).current;
-  const driftAnim = useRef(new Animated.Value(0)).current;
+
+  // Soft crossfade whenever the theme changes
+  const themeFadeAnim = useRef(new Animated.Value(1)).current;
 
   const isBootcamp = activeTab === "bootcamp";
   const isFrosh = activeTab === "frosh";
@@ -40,78 +45,34 @@ export default function HomeScreen() {
 
   const menuOptions = [
     { id: "account", label: "Account", icon: "person-outline" },
-    { id: "about", label: "About Frosh", icon: "information-circle-outline" },
+    { id: "schedule", label: "Schedule", icon: "calendar-outline" },
+    { id: "about", label: "About Frosh", icon: "document-text-outline" },
     { id: "connect", label: "Connect with us", icon: "chatbubble-outline" },
     { id: "switch", label: "Switch Mode", icon: isDarkMode ? "sunny-outline" : "moon-outline" },
   ];
 
-  const [isSwitching, setIsSwitching] = useState(false);
-
-  // A very gentle "breathing" curve — no sharp acceleration on either end,
-  // long unhurried tail on the way in.
-  const softEaseOut = Easing.bezier(0.33, 0, 0.2, 1); // for fading out
-  const softEaseIn = Easing.bezier(0.16, 1, 0.3, 1); // for fading in — soft, slow settle
-
-  const handleSwitch = () => {
-    if (isSwitching) return;
-    setIsSwitching(true);
-
-    // Fade + drift out — small, unhurried, almost nothing happening to scale
-    Animated.parallel([
-      Animated.timing(opacityAnim, {
-        toValue: 0,
-        duration: 320,
-        easing: softEaseOut,
-        useNativeDriver: true,
-      }),
-      Animated.timing(driftAnim, {
-        toValue: -4,
-        duration: 320,
-        easing: softEaseOut,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 0.995,
-        duration: 320,
-        easing: softEaseOut,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      // Toggle theme while invisible
-      setIsDarkMode((prev) => !prev);
-
-      // Reset drift to the opposite side so it settles inward, then fade + drift in
-      driftAnim.setValue(4);
-
-      Animated.parallel([
-        Animated.timing(opacityAnim, {
-          toValue: 1,
-          duration: 600,
-          easing: softEaseIn,
-          useNativeDriver: true,
-        }),
-        Animated.timing(driftAnim, {
-          toValue: 0,
-          duration: 600,
-          easing: softEaseIn,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: 600,
-          easing: softEaseIn,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setIsSwitching(false);
-      });
-    });
+  const handleTabPress = (tabId) => {
+    setActiveTab(tabId);
   };
 
   const handleMenuPress = (id) => {
     setModalVisible(false);
     if (id === "switch") {
-      handleSwitch();
+      // 🌗 Slow, soft crossfade theme toggle
+      Animated.timing(themeFadeAnim, {
+        toValue: 0,
+        duration: 320,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start(() => {
+        setIsDarkMode((prev) => !prev);
+        Animated.timing(themeFadeAnim, {
+          toValue: 1,
+          duration: 550,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }).start();
+      });
       return;
     }
     if (id === "connect") {
@@ -123,26 +84,30 @@ export default function HomeScreen() {
       return;
     }
     if (id === "account") {
-  navigation.navigate("Profile", { theme: isDarkMode ? darkTheme : lightTheme });
-  return;
-}
+      navigation.navigate("Profile", { theme: isDarkMode ? darkTheme : lightTheme });
+      return;
+    }
+    if (id === "schedule") {
+      navigation.navigate("Schedule", { theme: isDarkMode ? darkTheme : lightTheme });
+      return;
+    }
     Alert.alert("Menu Item", `You tapped "${id}"`);
   };
 
   useEffect(() => {
     if (modalVisible) {
-      Animated.spring(slideAnim, {
+      Animated.timing(slideAnim, {
         toValue: 1,
+        duration: 380,
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
         useNativeDriver: true,
-        tension: 65,
-        friction: 11,
       }).start();
     } else {
-      Animated.spring(slideAnim, {
+      Animated.timing(slideAnim, {
         toValue: 0,
+        duration: 300,
+        easing: Easing.in(Easing.cubic),
         useNativeDriver: true,
-        tension: 65,
-        friction: 11,
       }).start();
     }
   }, [modalVisible]);
@@ -158,136 +123,112 @@ export default function HomeScreen() {
     <>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
 
-      <Animated.View
-        style={{
-          flex: 1,
-          transform: [{ scale: scaleAnim }, { translateY: driftAnim }],
-          opacity: opacityAnim,
-        }}
+      {/* Soft crossfade wrapper for theme switching */}
+      <AnimatedLinearGradient
+        colors={theme.bgGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.container, { opacity: themeFadeAnim }]}
       >
-        <LinearGradient
-          colors={theme.bgGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.container}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 40 }}
         >
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 40 }}
-          >
-            {/* HEADER */}
-            <View style={styles.header}>
-              <View>
-                <Text style={[styles.hello, { color: theme.textPrimary }]}>Hi, Navika</Text>
-                <Text style={[styles.welcome, { color: theme.textSecondary }]}>Welcome back!</Text>
-              </View>
+          {/* HEADER */}
+          <View style={styles.header}>
+            <View>
+              <Text style={[styles.hello, { color: theme.textPrimary }]}>Hi, Navika</Text>
+              <Text style={[styles.welcome, { color: theme.textSecondary }]}>Welcome back!</Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.profileCircle, { backgroundColor: theme.cardBg, shadowColor: theme.shadowColor }]}
+              onPress={() => setModalVisible(true)}
+            >
+              <Feather name="user" size={24} color={theme.iconColor} />
+            </TouchableOpacity>
+          </View>
+
+          {/* TOP CARD */}
+          <View style={[styles.topCard, theme.topCard]}>
+            <View style={styles.tabsContainer}>
+              {/* Bootcamp Tab */}
               <TouchableOpacity
-                style={[styles.profileCircle, { backgroundColor: theme.cardBg, shadowColor: theme.shadowColor }]}
-                onPress={() => setModalVisible(true)}
+                style={[styles.tab, isBootcamp && { backgroundColor: theme.tabActiveBg }]}
+                onPress={() => handleTabPress("bootcamp")}
               >
-                <Feather name="user" size={24} color={theme.iconColor} />
+                <View style={styles.tabContent}>
+                  <Ionicons name="calendar-outline" size={24} color={isBootcamp ? theme.tabActiveText : theme.tabInactiveText} />
+                  <Text style={[isBootcamp ? styles.tabActive : styles.tabInactive, { color: isBootcamp ? theme.tabActiveText : theme.tabInactiveText }]}>Bootcamp</Text>
+                </View>
+              </TouchableOpacity>
+
+              {/* Frosh Tab */}
+              <TouchableOpacity
+                style={[styles.tab, isFrosh && { backgroundColor: theme.tabActiveBg }]}
+                onPress={() => handleTabPress("frosh")}
+              >
+                <View style={styles.tabContent}>
+                  <Image source={require("../assets/star.png")} resizeMode="contain" style={styles.tabLogoLarge} />
+                </View>
+              </TouchableOpacity>
+
+              {/* About Tab */}
+              <TouchableOpacity
+                style={[styles.tab, isAbout && { backgroundColor: theme.tabActiveBg }]}
+                onPress={() => handleTabPress("about")}
+              >
+                <View style={styles.tabContent}>
+                  <Ionicons name="document-text-outline" size={28} color={isAbout ? theme.tabActiveText : theme.tabInactiveText} />
+                  <Text style={[isAbout ? styles.tabActive : styles.tabInactive, { color: isAbout ? theme.tabActiveText : theme.tabInactiveText }]}>About</Text>
+                </View>
               </TouchableOpacity>
             </View>
+          </View>
 
-            {/* TOP CARD */}
-            {/* Outer view owns the shadow/elevation (must NOT have overflow:hidden,
-                or Android will render the shadow as an unclipped rectangle). */}
-            <View
-              style={[
-                styles.topCardShadowWrap,
-                {
-                  backgroundColor: theme.topCard.backgroundColor,
-                  shadowColor: theme.topCard.shadowColor,
-                  shadowOpacity: theme.topCard.shadowOpacity,
-                  shadowRadius: theme.topCard.shadowRadius,
-                  shadowOffset: theme.topCard.shadowOffset,
-                  elevation: theme.topCard.elevation,
-                },
-              ]}
-            >
-              {/* Inner view owns the rounded clipping + background fill */}
-              <View style={[styles.topCard, { backgroundColor: theme.topCard.backgroundColor }]}>
-                <View style={styles.tabsContainer}>
-                  {/* Bootcamp Tab */}
-                  <TouchableOpacity
-                    style={[styles.tab, isBootcamp && { backgroundColor: theme.tabActiveBg }]}
-                    onPress={() => setActiveTab("bootcamp")}
-                  >
-                    <View style={styles.tabContent}>
-                      <Ionicons name="calendar-outline" size={24} color={isBootcamp ? theme.tabActiveText : theme.tabInactiveText} />
-                      <Text style={[isBootcamp ? styles.tabActive : styles.tabInactive, { color: isBootcamp ? theme.tabActiveText : theme.tabInactiveText }]}>Bootcamp</Text>
-                    </View>
-                  </TouchableOpacity>
+          {/* CONTENT */}
+          {isBootcamp ? (
+            <BootcampScreen theme={theme} />
+          ) : isFrosh ? (
+            <View style={[styles.liveCard, theme.liveCard]}>
+              <View style={styles.liveHeadingContainer}>
+                <View style={[styles.line, { backgroundColor: theme.lineColor }]} />
+                <Text style={[styles.liveHeading, { color: theme.accent }]}>• LIVE EVENT •</Text>
+                <View style={[styles.line, { backgroundColor: theme.lineColor }]} />
+              </View>
 
-                  {/* Frosh Tab */}
-                  <TouchableOpacity
-                    style={[styles.tab, isFrosh && { backgroundColor: theme.tabActiveBg }]}
-                    onPress={() => setActiveTab("frosh")}
-                  >
-                    <View style={styles.tabContent}>
-                      <Image source={require("../assets/star.png")} resizeMode="contain" style={styles.tabLogoLarge} />
-                    </View>
-                  </TouchableOpacity>
+              <Image source={require("../assets/concert.jpg")} style={styles.eventImage} />
 
-                  {/* About Tab */}
-                  <TouchableOpacity
-                    style={[styles.tab, isAbout && { backgroundColor: theme.tabActiveBg }]}
-                    onPress={() => setActiveTab("about")}
-                  >
-                    <View style={styles.tabContent}>
-                      <Ionicons name="document-text-outline" size={28} color={isAbout ? theme.tabActiveText : theme.tabInactiveText} />
-                      <Text style={[isAbout ? styles.tabActive : styles.tabInactive, { color: isAbout ? theme.tabActiveText : theme.tabInactiveText }]}>About</Text>
-                    </View>
-                  </TouchableOpacity>
+              <View style={[styles.liveNow, { borderColor: theme.accent }]}>
+                <Text style={[styles.liveNowText, { color: theme.accent }]}>LIVE NOW</Text>
+              </View>
+
+              <Text style={[styles.eventTitle, { color: theme.textPrimary }]}>Battle of Hoods</Text>
+
+              <View style={styles.infoRow}>
+                <Ionicons name="location" size={18} color={theme.accent} />
+                <Text style={[styles.location, { color: theme.accent }]}>Main Auditorium</Text>
+              </View>
+
+              <View style={styles.infoRow}>
+                <Feather name="calendar" size={16} color={theme.accent} />
+                <Text style={[styles.infoText, { color: theme.textPrimary }]}>07 May 2026</Text>
+              </View>
+
+              <View style={[styles.bottomRow, { marginTop: 0 }]}>
+                <View style={styles.infoRow}>
+                  <Feather name="clock" size={16} color={theme.accent} />
+                  <Text style={[styles.infoText, { color: theme.textPrimary }]}>06:30 PM Onwards</Text>
                 </View>
+                <TouchableOpacity style={[styles.arrowCircle, { borderColor: theme.accent }]}>
+                  <Ionicons name="arrow-forward" size={24} color={theme.accent} />
+                </TouchableOpacity>
               </View>
             </View>
-
-            {/* CONTENT */}
-            {isBootcamp ? (
-              <BootcampScreen theme={theme} />
-            ) : isFrosh ? (
-              <View style={[styles.liveCard, theme.liveCard]}>
-                <View style={styles.liveHeadingContainer}>
-                  <View style={[styles.line, { backgroundColor: theme.lineColor }]} />
-                  <Text style={[styles.liveHeading, { color: theme.accent }]}>• LIVE EVENT •</Text>
-                  <View style={[styles.line, { backgroundColor: theme.lineColor }]} />
-                </View>
-
-                <Image source={require("../assets/concert.jpg")} style={styles.eventImage} />
-
-                <View style={[styles.liveNow, { borderColor: theme.accent }]}>
-                  <Text style={[styles.liveNowText, { color: theme.accent }]}>LIVE NOW</Text>
-                </View>
-
-                <Text style={[styles.eventTitle, { color: theme.textPrimary }]}>Battle of Hoods</Text>
-
-                <View style={styles.infoRow}>
-                  <Ionicons name="location" size={18} color={theme.accent} />
-                  <Text style={[styles.location, { color: theme.accent }]}>Main Auditorium</Text>
-                </View>
-
-                <View style={styles.infoRow}>
-                  <Feather name="calendar" size={16} color={theme.accent} />
-                  <Text style={[styles.infoText, { color: theme.textPrimary }]}>07 May 2026</Text>
-                </View>
-
-                <View style={[styles.bottomRow, { marginTop: 0 }]}>
-                  <View style={styles.infoRow}>
-                    <Feather name="clock" size={16} color={theme.accent} />
-                    <Text style={[styles.infoText, { color: theme.textPrimary }]}>06:30 PM Onwards</Text>
-                  </View>
-                  <TouchableOpacity style={[styles.arrowCircle, { borderColor: theme.accent }]}>
-                    <Ionicons name="arrow-forward" size={24} color={theme.accent} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ) : (
-              <AboutScreen theme={theme} />
-            )}
-          </ScrollView>
-        </LinearGradient>
-      </Animated.View>
+          ) : (
+            <AboutScreen theme={theme} />
+          )}
+        </ScrollView>
+      </AnimatedLinearGradient>
 
       {/* PROFILE MENU */}
       <Modal
@@ -329,10 +270,11 @@ export default function HomeScreen() {
   );
 }
 
+// ---------- STYLES (unchanged) ----------
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
-    marginTop: 50,
+    marginTop: 55,
     paddingHorizontal: 24,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -351,14 +293,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     elevation: 6,
   },
-
-  topCardShadowWrap: {
+  topCard: {
     marginHorizontal: 22,
     marginTop: 18,
-    borderRadius: 28,
-  },
- 
-  topCard: {
     borderRadius: 28,
     height: 80,
     overflow: "hidden",

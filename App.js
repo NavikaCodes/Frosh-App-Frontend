@@ -2,7 +2,8 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Easing } from 'react-native'; 
+import { Easing } from 'react-native';
+
 import LoginScreen from './components/LoginScreen';
 import HomeScreen from './screens/HomeScreen';
 import TeamScreen from './screens/TeamScreen';
@@ -14,8 +15,10 @@ import SocietiesScreen from './screens/SocietiesScreen';
 import ConnectScreen from './screens/ConnectScreen';
 import AboutFroshScreen from './screens/AboutFroshScreen';
 import ProfileScreen from './screens/ProfileScreen';
+import ScheduleScreen from './screens/ScheduleScreen';
 
 const Stack = createNativeStackNavigator();
+
 const transitionConfig = {
   animation: 'timing',
   config: {
@@ -32,7 +35,7 @@ export default function App() {
           initialRouteName="Login"
           screenOptions={{
             headerShown: false,
-            animation: 'fade', 
+            animation: 'fade',
             cardStyleInterpolator: ({ current }) => ({
               cardStyle: {
                 opacity: current.progress,
@@ -63,6 +66,7 @@ export default function App() {
           <Stack.Screen name="ConnectUs" component={ConnectScreen} />
           <Stack.Screen name="AboutFrosh" component={AboutFroshScreen} />
           <Stack.Screen name="Profile" component={ProfileScreen} />
+          <Stack.Screen name="Schedule" component={ScheduleScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

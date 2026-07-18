@@ -87,11 +87,14 @@ export default function HomeScreen() {
   const theme = isDarkMode ? darkTheme : lightTheme;
 
   const glassBg = isDarkMode
-    ? 'rgba(255, 255, 255, 0.08)'
-    : 'rgba(255, 255, 255, 0.5)';
+    ? 'rgba(255, 255, 255, 0.05)'
+    : 'rgba(255, 255, 255, 0.35)';
   const glassBorder = isDarkMode
-    ? 'rgba(255, 255, 255, 0.15)'
-    : 'rgba(255, 255, 255, 0.6)';
+    ? 'rgba(255, 255, 255, 0.2)'
+    : 'rgba(255, 255, 255, 0.7)';
+  const glassSheen = isDarkMode
+    ? ['rgba(255,255,255,0.14)', 'rgba(255,255,255,0)']
+    : ['rgba(255,255,255,0.55)', 'rgba(255,255,255,0)'];
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgGradient[0] }}>
@@ -127,7 +130,7 @@ export default function HomeScreen() {
 
           {/* GLASS TOP CARD with sliding indicator */}
           <BlurView
-            intensity={80}
+            intensity={300}
             tint={isDarkMode ? 'dark' : 'light'}
             experimentalBlurMethod="dimezisBlurView"
             style={[
@@ -139,6 +142,13 @@ export default function HomeScreen() {
               },
             ]}
           >
+            <LinearGradient
+              colors={glassSheen}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+              style={styles.glassSheen}
+              pointerEvents="none"
+            />
             <View
               style={styles.tabsContainer}
               onLayout={(e) => {
@@ -199,7 +209,26 @@ export default function HomeScreen() {
           {isBootcamp ? (
             <BootcampScreen theme={theme} />
           ) : isFrosh ? (
-            <View style={[styles.liveCard, theme.liveCard]}>
+            <BlurView
+              intensity={150}
+              tint="dark"
+              experimentalBlurMethod="dimezisBlurView"
+              style={[
+                styles.liveCard,
+                {
+                  backgroundColor: glassBg,
+                  borderColor: glassBorder,
+                  shadowColor: theme.shadowColor,
+                },
+              ]}
+            >
+              <LinearGradient
+                colors={glassSheen}
+                start={{ x: 0.5, y: 0 }}
+                end={{ x: 0.5, y: 1 }}
+                style={styles.glassSheen}
+                pointerEvents="none"
+              />
               <View style={styles.liveHeadingContainer}>
                 <View style={[styles.line, { backgroundColor: theme.lineColor }]} />
                 <Text style={[styles.liveHeading, { color: theme.accent }]}>• LIVE EVENT •</Text>
@@ -233,7 +262,7 @@ export default function HomeScreen() {
                   <Ionicons name="arrow-forward" size={24} color={theme.accent} />
                 </TouchableOpacity>
               </View>
-            </View>
+            </BlurView>
           ) : (
             <AboutScreen theme={theme} />
           )}
@@ -303,11 +332,20 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     height: 80,
     overflow: "hidden",
-    borderWidth: 0.8,
+    borderWidth: 1,
     shadowOpacity: 0.15,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
     elevation: 8,
+  },
+  glassSheen: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: "55%",
+    borderTopLeftRadius: 27,
+    borderTopRightRadius: 27,
   },
   tabsContainer: {
     flex: 1,
@@ -344,6 +382,12 @@ const styles = StyleSheet.create({
     marginTop: 24,
     borderRadius: 28,
     padding: 18,
+    overflow: "hidden",
+    borderWidth: 1,
+    shadowOpacity: 0.15,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
   },
   liveHeadingContainer: {
     flexDirection: "row",

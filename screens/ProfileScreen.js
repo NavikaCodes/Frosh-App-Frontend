@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { lightTheme } from "./LightScreen";
 import { darkTheme } from "./DarkScreen";
@@ -32,18 +33,38 @@ function withAlpha(hex, alpha) {
   return `${hex}${alpha}`;
 }
 
-function InfoRow({ theme, icon, iconColor, label, value }) {
+function InfoRow({ theme, isDarkMode, icon, iconColor, label, value }) {
+  const glassBg = isDarkMode
+    ? "rgba(255, 255, 255, 0.05)"
+    : "rgba(255, 255, 255, 0.35)";
+  const glassBorder = isDarkMode
+    ? "rgba(255, 255, 255, 0.2)"
+    : "rgba(255, 255, 255, 0.7)";
+  const glassSheen = isDarkMode
+    ? ["rgba(255,255,255,0.14)", "rgba(255,255,255,0)"]
+    : ["rgba(255,255,255,0.55)", "rgba(255,255,255,0)"];
+
   return (
-    <View
+    <BlurView
+      intensity={150}
+      tint={isDarkMode ? "dark" : "light"}
+      experimentalBlurMethod="dimezisBlurView"
       style={[
         styles.card,
         {
-          backgroundColor: theme.cardBg,
-          borderColor: theme.lineColor,
+          backgroundColor: glassBg,
+          borderColor: glassBorder,
           shadowColor: theme.shadowColor,
         },
       ]}
     >
+      <LinearGradient
+        colors={glassSheen}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.glassSheen}
+        pointerEvents="none"
+      />
       <View
         style={[
           styles.iconCircle,
@@ -61,7 +82,7 @@ function InfoRow({ theme, icon, iconColor, label, value }) {
           {value}
         </Text>
       </View>
-    </View>
+    </BlurView>
   );
 }
 
@@ -177,6 +198,7 @@ export default function ProfileScreen() {
             <View style={styles.list}>
               <InfoRow
                 theme={theme}
+                isDarkMode={isDarkMode}
                 icon={(c) => (
                   <MaterialCommunityIcons
                     name="card-account-details-outline"
@@ -190,6 +212,7 @@ export default function ProfileScreen() {
               />
               <InfoRow
                 theme={theme}
+                isDarkMode={isDarkMode}
                 icon={(c) => <Ionicons name="school-outline" size={22} color={c} />}
                 iconColor={theme.accent}
                 label="Branch"
@@ -197,6 +220,7 @@ export default function ProfileScreen() {
               />
               <InfoRow
                 theme={theme}
+                isDarkMode={isDarkMode}
                 icon={(c) => <Feather name="phone" size={20} color={c} />}
                 iconColor={theme.accent}
                 label="Phone Number"
@@ -204,6 +228,7 @@ export default function ProfileScreen() {
               />
               <InfoRow
                 theme={theme}
+                isDarkMode={isDarkMode}
                 icon={(c) => <Feather name="calendar" size={20} color={c} />}
                 iconColor={theme.accent}
                 label="Date of Birth"
@@ -211,6 +236,7 @@ export default function ProfileScreen() {
               />
               <InfoRow
                 theme={theme}
+                isDarkMode={isDarkMode}
                 icon={(c) => <Ionicons name="people-outline" size={22} color={c} />}
                 iconColor={theme.accent}
                 label="Bootcamp Batch"
@@ -218,6 +244,7 @@ export default function ProfileScreen() {
               />
               <InfoRow
                 theme={theme}
+                isDarkMode={isDarkMode}
                 icon={(c) => <Ionicons name="person-outline" size={20} color={c} />}
                 iconColor={familyAccent}
                 label="Mother's Name"
@@ -225,6 +252,7 @@ export default function ProfileScreen() {
               />
               <InfoRow
                 theme={theme}
+                isDarkMode={isDarkMode}
                 icon={(c) => <Ionicons name="person-outline" size={20} color={c} />}
                 iconColor={familyAccent}
                 label="Father's Name"
@@ -301,10 +329,20 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderWidth: 1,
+    overflow: "hidden",
     shadowOpacity: 0.15,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 6 },
     elevation: 4,
+  },
+  glassSheen: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: "60%",
+    borderTopLeftRadius: 17,
+    borderTopRightRadius: 17,
   },
   iconCircle: {
     width: 42,

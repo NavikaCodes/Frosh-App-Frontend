@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import Icon from '@expo/vector-icons/Ionicons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
@@ -65,6 +66,16 @@ export default function AboutFroshScreen({ theme: themeProp }) {
 
   const bgColor = t.bgGradient?.[0] || '#020B18';
 
+  const glassBg = isDarkTheme
+    ? 'rgba(255, 255, 255, 0.05)'
+    : 'rgba(255, 255, 255, 0.35)';
+  const glassBorder = isDarkTheme
+    ? 'rgba(255, 255, 255, 0.2)'
+    : 'rgba(255, 255, 255, 0.7)';
+  const glassSheen = isDarkTheme
+    ? ['rgba(255,255,255,0.14)', 'rgba(255,255,255,0)']
+    : ['rgba(255,255,255,0.55)', 'rgba(255,255,255,0)'];
+
   return (
     <View style={{ flex: 1, backgroundColor: bgColor }}>
       <StatusBar
@@ -111,12 +122,22 @@ export default function AboutFroshScreen({ theme: themeProp }) {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-              <View
+              <BlurView
+                intensity={300}
+                tint={isDarkTheme ? 'dark' : 'light'}
+                experimentalBlurMethod="dimezisBlurView"
                 style={[
                   styles.bigCard,
-                  { backgroundColor: t.cardBg, borderColor: BRAND_PURPLE, shadowColor: BRAND_PURPLE },
+                  { backgroundColor: glassBg, borderColor: glassBorder, shadowColor: BRAND_PURPLE },
                 ]}
               >
+                <LinearGradient
+                  colors={glassSheen}
+                  start={{ x: 0.5, y: 0 }}
+                  end={{ x: 0.5, y: 1 }}
+                  style={styles.glassSheen}
+                  pointerEvents="none"
+                />
                 {/* Logo */}
                 <View style={styles.logoContainer}>
                   <Image source={require('../assets/logo.png')} style={styles.logoImage} />
@@ -182,7 +203,7 @@ export default function AboutFroshScreen({ theme: themeProp }) {
                   </View>
                   <Icon name="compass-outline" size={30} color={BRAND_PURPLE} style={styles.quoteCompass} />
                 </View>
-              </View>
+              </BlurView>
             </ScrollView>
           </SafeAreaView>
         </LinearGradient>
@@ -214,10 +235,20 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     borderWidth: 1,
     padding: 22,
+    overflow: 'hidden',
     shadowOpacity: 0.35,
     shadowRadius: 28,
     shadowOffset: { width: 0, height: 12 },
     elevation: 16,
+  },
+  glassSheen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '35%',
+    borderTopLeftRadius: 27,
+    borderTopRightRadius: 27,
   },
   logoContainer: { alignItems: 'center', marginVertical: 0 },
   logoImage: { width: 200, height: 100, resizeMode: 'contain' },

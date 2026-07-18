@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import Icon from '@expo/vector-icons/Ionicons';
 import { Feather } from '@expo/vector-icons';
 
@@ -102,6 +103,16 @@ export default function HelpSupportScreen({ theme: themeProp }) {
 
   const bgColor = t.bgGradient?.[0] || '#020B18';
 
+  const glassBg = isDarkTheme
+    ? 'rgba(255, 255, 255, 0.05)'
+    : 'rgba(255, 255, 255, 0.35)';
+  const glassBorder = isDarkTheme
+    ? 'rgba(255, 255, 255, 0.2)'
+    : 'rgba(255, 255, 255, 0.7)';
+  const glassSheen = isDarkTheme
+    ? ['rgba(255,255,255,0.14)', 'rgba(255,255,255,0)']
+    : ['rgba(255,255,255,0.55)', 'rgba(255,255,255,0)'];
+
   return (
     <View style={{ flex: 1, backgroundColor: bgColor }}>
       <StatusBar
@@ -149,13 +160,24 @@ export default function HelpSupportScreen({ theme: themeProp }) {
                 {helpLinks.map((item) => (
                   <TouchableOpacity
                     key={item.id}
-                    style={[
-                      styles.card,
-                      { backgroundColor: t.cardBg, borderColor: t.lineColor },
-                    ]}
+                    style={[styles.card, { borderColor: glassBorder }]}
                     onPress={() => handlePress(item)}
                     activeOpacity={0.7}
                   >
+                    <BlurView
+                      intensity={150}
+                      tint={isDarkTheme ? 'dark' : 'light'}
+                      experimentalBlurMethod="dimezisBlurView"
+                      style={[StyleSheet.absoluteFill, { backgroundColor: glassBg, borderRadius: 24 }]}
+                    >
+                      <LinearGradient
+                        colors={glassSheen}
+                        start={{ x: 0.5, y: 0 }}
+                        end={{ x: 0.5, y: 1 }}
+                        style={styles.glassSheen}
+                        pointerEvents="none"
+                      />
+                    </BlurView>
                     <View style={[styles.iconCircle, { borderColor: t.accent }]}>
                       {renderIcon(item)}
                     </View>
@@ -178,12 +200,22 @@ export default function HelpSupportScreen({ theme: themeProp }) {
             ]}
           >
             <TouchableWithoutFeedback onPress={() => {}}>
-              <View
+              <BlurView
+                intensity={200}
+                tint={isDarkTheme ? 'dark' : 'light'}
+                experimentalBlurMethod="dimezisBlurView"
                 style={[
                   styles.modalCard,
-                  { backgroundColor: t.cardBg, shadowColor: t.shadowColor },
+                  { backgroundColor: glassBg, borderColor: glassBorder, borderWidth: 1, shadowColor: t.shadowColor },
                 ]}
               >
+                <LinearGradient
+                  colors={glassSheen}
+                  start={{ x: 0.5, y: 0 }}
+                  end={{ x: 0.5, y: 1 }}
+                  style={styles.glassSheen}
+                  pointerEvents="none"
+                />
                 <Text style={[styles.modalTitle, { color: t.textPrimary }]}>Contact Support</Text>
                 <View style={[styles.divider, { backgroundColor: t.lineColor }]} />
                 {contacts.map((contact, index) => (
@@ -209,7 +241,7 @@ export default function HelpSupportScreen({ theme: themeProp }) {
                 <TouchableOpacity style={[styles.closeButton, { backgroundColor: t.accent }]} onPress={() => setModalVisible(false)}>
                   <Text style={styles.closeButtonText}>Close</Text>
                 </TouchableOpacity>
-              </View>
+              </BlurView>
             </TouchableWithoutFeedback>
           </View>
         </TouchableWithoutFeedback>
@@ -263,6 +295,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
     borderWidth: 1,
+    overflow: 'hidden',
   },
   iconCircle: {
     width: 88,
@@ -287,9 +320,19 @@ const styles = StyleSheet.create({
     width: width * 0.88,
     borderRadius: 28,
     padding: 24,
+    overflow: 'hidden',
     shadowOpacity: 0.3,
     shadowRadius: 24,
     elevation: 12,
+  },
+  glassSheen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '45%',
+    borderTopLeftRadius: 23,
+    borderTopRightRadius: 23,
   },
   modalTitle: {
     fontSize: 22,

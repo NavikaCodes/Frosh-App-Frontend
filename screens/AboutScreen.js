@@ -9,6 +9,12 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const GLASS_BG = 'rgba(255, 255, 255, 0.05)';
+const GLASS_BORDER = 'rgba(255, 255, 255, 0.2)';
+const GLASS_SHEEN = ['rgba(255,255,255,0.14)', 'rgba(255,255,255,0)'];
 
 const AboutScreen = ({ theme }) => {
   const navigation = useNavigation();
@@ -160,21 +166,27 @@ const AboutScreen = ({ theme }) => {
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: theme.cardBg },
-      ]}
-    >
-      <View
+    <View style={styles.container}>
+      <BlurView
+        intensity={150}
+        tint="dark"
+        experimentalBlurMethod="dimezisBlurView"
         style={[
           styles.bigCard,
           {
-            backgroundColor: theme.cardBg,
+            backgroundColor: GLASS_BG,
+            borderColor: GLASS_BORDER,
             shadowColor: theme.shadowColor,
           },
         ]}
       >
+        <LinearGradient
+          colors={GLASS_SHEEN}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={styles.glassSheen}
+          pointerEvents="none"
+        />
         {/* Seamless marquee rows — each row is 2 copies of a short unit,
             translated by exactly one unit's width, so the loop reset is invisible */}
         <View style={styles.watermarkContainer} pointerEvents="none">
@@ -264,7 +276,7 @@ const AboutScreen = ({ theme }) => {
             </Pressable>
           </Animated.View>
         ))}
-      </View>
+      </BlurView>
     </View>
   );
 };
@@ -280,11 +292,22 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     paddingVertical: 20,
     paddingHorizontal: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
     shadowOpacity: 0.25,
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 6 },
     elevation: 6,
     position: 'relative',
+  },
+  glassSheen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '55%',
+    borderTopLeftRadius: 27,
+    borderTopRightRadius: 27,
   },
   bigCardTitle: {
     fontSize: 24,

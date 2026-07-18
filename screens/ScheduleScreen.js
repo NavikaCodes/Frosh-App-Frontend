@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { lightTheme } from "./LightScreen";
 import { darkTheme } from "./DarkScreen";
@@ -71,20 +72,40 @@ function withAlpha(hex, alpha) {
   return `${hex}${alpha}`;
 }
 
+function glassColors(isDarkMode) {
+  return {
+    glassBg: isDarkMode ? "rgba(255, 255, 255, 0.05)" : "rgba(255, 255, 255, 0.35)",
+    glassBorder: isDarkMode ? "rgba(255, 255, 255, 0.2)" : "rgba(255, 255, 255, 0.7)",
+    glassSheen: isDarkMode
+      ? ["rgba(255,255,255,0.14)", "rgba(255,255,255,0)"]
+      : ["rgba(255,255,255,0.55)", "rgba(255,255,255,0)"],
+  };
+}
+
 // ---- Card components (unchanged) ----
-function LiveEventCard({ theme, liveAccent, event }) {
-  // ... (unchanged, same as your original)
+function LiveEventCard({ theme, liveAccent, event, isDarkMode }) {
+  const { glassBg, glassBorder, glassSheen } = glassColors(isDarkMode);
   return (
-    <View
+    <BlurView
+      intensity={150}
+      tint={isDarkMode ? "dark" : "light"}
+      experimentalBlurMethod="dimezisBlurView"
       style={[
         styles.card,
         {
-          backgroundColor: theme.cardBg,
-          borderColor: theme.lineColor,
+          backgroundColor: glassBg,
+          borderColor: glassBorder,
           shadowColor: theme.shadowColor,
         },
       ]}
     >
+      <LinearGradient
+        colors={glassSheen}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.glassSheen}
+        pointerEvents="none"
+      />
       <View style={styles.imageWrap}>
         <Image source={event.image} style={styles.eventImage} />
         <View style={styles.liveBadge}>
@@ -114,23 +135,33 @@ function LiveEventCard({ theme, liveAccent, event }) {
       </View>
 
       <View style={[styles.divider, { backgroundColor: theme.lineColor }]} />
-    </View>
+    </BlurView>
   );
 }
 
-function UpcomingEventCard({ theme, liveAccent, event }) {
-  // ... (unchanged)
+function UpcomingEventCard({ theme, liveAccent, event, isDarkMode }) {
+  const { glassBg, glassBorder, glassSheen } = glassColors(isDarkMode);
   return (
-    <View
+    <BlurView
+      intensity={150}
+      tint={isDarkMode ? "dark" : "light"}
+      experimentalBlurMethod="dimezisBlurView"
       style={[
         styles.rowCard,
         {
-          backgroundColor: theme.cardBg,
-          borderColor: theme.lineColor,
+          backgroundColor: glassBg,
+          borderColor: glassBorder,
           shadowColor: theme.shadowColor,
         },
       ]}
     >
+      <LinearGradient
+        colors={glassSheen}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.glassSheenRow}
+        pointerEvents="none"
+      />
       <Image source={event.image} style={styles.thumb} />
       <View style={styles.rowCardBody}>
         <Text style={[styles.category, { color: liveAccent }]}>
@@ -165,23 +196,33 @@ function UpcomingEventCard({ theme, liveAccent, event }) {
           Remind Me
         </Text>
       </TouchableOpacity>
-    </View>
+    </BlurView>
   );
 }
 
-function PastEventCard({ theme, liveAccent, event }) {
-  // ... (unchanged)
+function PastEventCard({ theme, liveAccent, event, isDarkMode }) {
+  const { glassBg, glassBorder, glassSheen } = glassColors(isDarkMode);
   return (
-    <View
+    <BlurView
+      intensity={150}
+      tint={isDarkMode ? "dark" : "light"}
+      experimentalBlurMethod="dimezisBlurView"
       style={[
         styles.rowCard,
         {
-          backgroundColor: theme.cardBg,
-          borderColor: theme.lineColor,
+          backgroundColor: glassBg,
+          borderColor: glassBorder,
           shadowColor: theme.shadowColor,
         },
       ]}
     >
+      <LinearGradient
+        colors={glassSheen}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.glassSheenRow}
+        pointerEvents="none"
+      />
       <Image source={event.image} style={[styles.thumb, { opacity: 0.85 }]} />
       <View style={styles.rowCardBody}>
         <Text style={[styles.category, { color: liveAccent }]}>
@@ -208,7 +249,7 @@ function PastEventCard({ theme, liveAccent, event }) {
         <Ionicons name="checkmark" size={16} color="#34D399" />
         <Text style={styles.completedText}>Completed</Text>
       </View>
-    </View>
+    </BlurView>
   );
 }
 
@@ -379,6 +420,7 @@ export default function ScheduleScreen() {
                       theme={theme}
                       liveAccent={liveAccent}
                       event={event}
+                      isDarkMode={isDarkMode}
                     />
                   ))
                 )}
@@ -402,6 +444,7 @@ export default function ScheduleScreen() {
                       theme={theme}
                       liveAccent={liveAccent}
                       event={event}
+                      isDarkMode={isDarkMode}
                     />
                   ))
                 )}
@@ -425,6 +468,7 @@ export default function ScheduleScreen() {
                       theme={theme}
                       liveAccent={liveAccent}
                       event={event}
+                      isDarkMode={isDarkMode}
                     />
                   ))
                 )}
@@ -494,10 +538,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 14,
     marginBottom: 16,
+    overflow: "hidden",
     shadowOpacity: 0.2,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 8 },
     elevation: 5,
+  },
+  glassSheen: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: "40%",
+    borderTopLeftRadius: 21,
+    borderTopRightRadius: 21,
   },
   imageWrap: { borderRadius: 16, overflow: "hidden", marginBottom: 12 },
   eventImage: { width: "100%", height: 160 },
@@ -528,10 +582,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 10,
     marginBottom: 14,
+    overflow: "hidden",
     shadowOpacity: 0.15,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
     elevation: 3,
+  },
+  glassSheenRow: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: "60%",
+    borderTopLeftRadius: 17,
+    borderTopRightRadius: 17,
   },
   thumb: { width: 70, height: 70, borderRadius: 12 },
   rowCardBody: { flex: 1, marginLeft: 12, marginRight: 8 },

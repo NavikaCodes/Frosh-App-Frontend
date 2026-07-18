@@ -1,449 +1,299 @@
-import React, { useRef, useCallback, useMemo, memo, useEffect } from "react";
+import React, { useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
+  TouchableOpacity,
   ScrollView,
   StatusBar,
-  TouchableOpacity,
-  Image,
-  FlatList,
+  Platform,
   Animated,
-  Easing,
-  Dimensions,
-} from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { Feather, Ionicons } from "@expo/vector-icons";
-import { useRoute } from "@react-navigation/native";
-import { lightTheme, darkTheme } from "./themes";
+} from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
-const { width } = Dimensions.get("window");
-const PAGE_WIDTH = width - 36;
-
-// ----- Page Data (4 pages) -----
-const pages = [
+const CARD_DATA = [
   {
-    id: "1",
-    heroImage: require("../assets/cos.avif"),
-    cardTitle: "Cultural OAT and\nShopping Complex",
-    cardDescription:
-      "A hub for shopping, dining, and student essentials at Thapar.",
-    description:
-      "The COS Complex at TIET offers a range of convenient stores and eateries for students. VI Mini Store sells electronic devices, accessories, and sports gear. Shadowz Salon and Spa provides beauty services, while Fashion Point offers skincare essentials. The Stationery Store supplies college essentials, and the Dessert Club offers sweet treats. Kabir Multi-Store stocks everyday essentials, and Pizza Nation serves unique pizzas. Honey Coffee Cafe is a vegetarian snack spot. Iqbal Juice Centre offers fresh juices, and RS Laundry handles garment care.",
+    id: 'eatery',
+    title: 'EATERY\nPOINTS',
+    subtitle: 'Grab a bite, anytime',
+    icon: 'restaurant-outline',
+    gradient: ['#FF8A50', '#FF3D71'],
+    size: 'tall',
+    route: 'EateryPoints',
   },
   {
-    id: "2",
-    heroImage: require("../assets/cos.avif"),
-    cardTitle: "Sports Complex",
-    cardDescription: "World-class facilities for athletes and fitness lovers.",
-    description:
-      "Sports Complex TIET has many comprehensive sports facilities, from courts for basketball, volleyball, badminton, and tennis to a swimming pool, a cricket ground, and so on. The sports department organises various tournaments, such as URJA, Thaparlympics, SPADES, IGNITE, and the Annual Athletic Meet. Tracksuits with T-shirts are given to freshers for easy identification, providing an impetus to fitness and enthusiasm. Eight full-time coaches and a Deputy Director of Sports ensure coaching and organisation of a high order.",
+    id: 'sports',
+    title: 'SPORTS\nCOMPLEX',
+    subtitle: 'Play. Sweat. Win.',
+    icon: 'basketball-outline',
+    gradient: ['#20D9A8', '#0E8A7A'],
+    size: 'small',
+    route: 'SportsComplex',
   },
   {
-    id: "3",
-    heroImage: require("../assets/cos.avif"),
-    cardTitle: "Nava Nalanda\nLibrary",
-    cardDescription: "The academic heart of Thapar Institute.",
-    description:
-      "The Nava Nalanda Library at Thapar Institute is a state-of-the-art facility offering a vast collection of academic resources, including books, journals, and digital materials. It provides a serene environment for study and research, equipped with spacious reading areas, group discussion rooms, and access to online resources. The library's user-friendly services and knowledgeable staff support the academic endeavours of students and faculty, fostering a culture of learning and intellectual growth on campus.",
+    id: 'study',
+    title: 'STUDY\nZONES',
+    subtitle: 'Quiet corners, sharp minds',
+    icon: 'book-outline',
+    gradient: ['#5B7CFA', '#2E3FA8'],
+    size: 'small',
+    route: 'StudyZones',
   },
   {
-    id: "4",
-    heroImage: require("../assets/cos.avif"),
-    cardTitle: "Central Park",
-    cardDescription: "A green oasis in the heart of campus.",
-    description:
-      "The Central Park serves as an oasis of tranquillity amidst the academic bustle. Its lush-green abode helps students to relax and unwind. The sparkling fountains add up to the soothing ambience, their gentle murmur creating a calming backdrop. The fresh air and open space foster a sense of community and well-being among the students, encouraging spontaneous gatherings and peaceful solitude alike. The seating areas in the lap of nature invite both quiet reflection and lively conversations, making the park a cherished retreat.",
+    id: 'cultural',
+    title: 'CULTURAL CENTRES',
+    subtitle: 'Where talent takes the stage',
+    icon: 'color-palette-outline',
+    gradient: ['#C24BF7', '#7B2FF7'],
+    size: 'wide',
+    route: 'CulturalCentres',
   },
 ];
 
-// ---------------------------------------------------------------------------
-// PageItem — memoized (unchanged)
-// ---------------------------------------------------------------------------
-const PageItem = memo(function PageItem({ item, index, theme, isDark, styles, scrollX }) {
-  const { opacity, translateY } = useMemo(() => {
-    const inputRange = [
-      (index - 1) * PAGE_WIDTH,
-      index * PAGE_WIDTH,
-      (index + 1) * PAGE_WIDTH,
-    ];
-    return {
-      opacity: scrollX.interpolate({
-        inputRange,
-        outputRange: [0.55, 1, 0.55],
-        extrapolate: "clamp",
-      }),
-      translateY: scrollX.interpolate({
-        inputRange,
-        outputRange: [10, 0, 10],
-        extrapolate: "clamp",
-      }),
-    };
-  }, [index, scrollX]);
-
-  return (
-    <View style={styles.pageContainer}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.pageContent}
-        nestedScrollEnabled
-      >
-        <Animated.View style={{ opacity, transform: [{ translateY }] }}>
-          {/* Hero Section with floating card */}
-          <View style={styles.heroSection}>
-            <Image
-              source={item.heroImage}
-              resizeMode="cover"
-              style={styles.heroImage}
-            />
-
-            {/* Floating Card */}
-            <View
-              style={[
-                styles.libraryCard,
-                { backgroundColor: theme.cardBg || (isDark ? "#1A2040" : "#FFFFFF") },
-              ]}
-            >
-              <Text style={[styles.libraryTitle, { color: theme.textPrimary }]}>
-                {item.cardTitle}
-              </Text>
-              <View style={[styles.blueUnderline, { backgroundColor: theme.accent }]} />
-              <Text style={[styles.libraryDescription, { color: theme.textSecondary }]}>
-                {item.cardDescription}
-              </Text>
-            </View>
-          </View>
-
-          {/* Description */}
-          <View style={styles.contentContainer}>
-            <Text style={[styles.description, { color: theme.textSecondary }]}>
-              {item.description}
-            </Text>
-          </View>
-        </Animated.View>
-      </ScrollView>
-    </View>
-  );
-});
-
-// ---------------------------------------------------------------------------
-// PaginationDots — memoized (unchanged)
-// ---------------------------------------------------------------------------
-const PaginationDots = memo(function PaginationDots({ scrollX, theme, styles }) {
-  return (
-    <View style={styles.pagination}>
-      {pages.map((_, dotIndex) => {
-        const dotInputRange = [
-          (dotIndex - 1) * PAGE_WIDTH,
-          dotIndex * PAGE_WIDTH,
-          (dotIndex + 1) * PAGE_WIDTH,
-        ];
-        const dotScaleX = scrollX.interpolate({
-          inputRange: dotInputRange,
-          outputRange: [1, 2.5, 1],
-          extrapolate: "clamp",
-        });
-        const dotOpacity = scrollX.interpolate({
-          inputRange: dotInputRange,
-          outputRange: [0.4, 1, 0.4],
-          extrapolate: "clamp",
-        });
-
-        return (
-          <Animated.View
-            key={dotIndex}
-            style={[
-              styles.dot,
-              {
-                backgroundColor: theme.accent,
-                opacity: dotOpacity,
-                transform: [{ scaleX: dotScaleX }],
-              },
-            ]}
-          />
-        );
-      })}
-    </View>
-  );
-});
-
-// ---------------------------------------------------------------------------
-// Main Component
-// ---------------------------------------------------------------------------
-export default function LifeScreen({ navigation }) {
+const LifeScreen = () => {
+  const navigation = useNavigation();
   const route = useRoute();
-  const theme = route.params?.theme || lightTheme;
-  const isDark = theme === darkTheme;
+  const theme = route.params?.theme;
 
-  // --- Animations ---
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(0)).current;
-  const isNavigating = useRef(false);
+  const scaleAnims = useRef(CARD_DATA.map(() => new Animated.Value(1))).current;
 
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 300,
-      easing: Easing.inOut(Easing.ease),
+  const pressIn = (i) =>
+    Animated.spring(scaleAnims[i], {
+      toValue: 0.95,
+      speed: 24,
+      bounciness: 4,
       useNativeDriver: true,
     }).start();
-  }, []);
 
-  const handleBack = () => {
-    if (isNavigating.current) return;
-    isNavigating.current = true;
-
-    Animated.timing(slideAnim, {
+  const pressOut = (i) =>
+    Animated.spring(scaleAnims[i], {
       toValue: 1,
-      duration: 250,
-      easing: Easing.inOut(Easing.ease),
+      speed: 18,
+      bounciness: 6,
       useNativeDriver: true,
-    }).start(() => {
-      navigation.goBack();
-    });
-  };
+    }).start();
 
-  const flatListRef = useRef(null);
-  const scrollX = useRef(new Animated.Value(0)).current;
+  const renderCard = (item, index, cardStyle) => (
+    <Animated.View
+      key={item.id}
+      style={[cardStyle, { transform: [{ scale: scaleAnims[index] }] }]}
+    >
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPressIn={() => pressIn(index)}
+        onPressOut={() => pressOut(index)}
+        onPress={() => navigation.navigate(item.route, { theme })}
+        style={styles.cardTouchable}
+      >
+        <LinearGradient
+          colors={item.gradient}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFillObject}
+        />
+        <Ionicons
+          name={item.icon.replace('-outline', '')}
+          size={item.size === 'wide' ? 110 : 100}
+          color="rgba(255,255,255,0.16)"
+          style={[
+            styles.bgIcon,
+            item.size === 'wide' ? styles.bgIconWide : styles.bgIconCorner,
+          ]}
+        />
 
-  const onScroll = useRef(
-    Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
-      useNativeDriver: true,
-    })
-  ).current;
-
-  const styles = getStyles(theme);
-  const bgColor = theme.bgGradient?.[0] || (isDark ? '#020B18' : '#F5F5F5');
-
-  const renderPage = useCallback(
-    ({ item, index }) => (
-      <PageItem
-        item={item}
-        index={index}
-        theme={theme}
-        isDark={isDark}
-        styles={styles}
-        scrollX={scrollX}
-      />
-    ),
-    [theme, isDark, styles, scrollX]
-  );
-
-  const keyExtractor = useCallback((item) => item.id, []);
-  const getItemLayout = useCallback(
-    (data, index) => ({
-      length: PAGE_WIDTH,
-      offset: PAGE_WIDTH * index,
-      index,
-    }),
-    []
+        {item.size === 'wide' ? (
+          <View style={styles.wideContent}>
+            <View style={styles.wideIconCircle}>
+              <Ionicons name={item.icon} size={26} color="#fff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardTitleWide}>{item.title}</Text>
+              <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
+            </View>
+            <Ionicons name="arrow-forward-circle" size={30} color="rgba(255,255,255,0.85)" />
+          </View>
+        ) : (
+          <View style={styles.cardContent}>
+            <Ionicons name={item.icon} size={26} color="#fff" style={{ marginBottom: item.size === 'tall' ? 14 : 8 }} />
+            <Text style={item.size === 'tall' ? styles.cardTitleTall : styles.cardTitleSmall}>
+              {item.title}
+            </Text>
+            <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    </Animated.View>
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: bgColor }}>
+    <View style={[styles.container, { backgroundColor: theme?.bgGradient?.[0] }]}>
       <StatusBar
-        translucent
+        barStyle="light-content"
         backgroundColor="transparent"
-        barStyle={isDark ? "light-content" : "dark-content"}
+        translucent={Platform.OS === 'android'}
       />
-      <Animated.View
-        style={[
-          {
-            flex: 1,
-            backgroundColor: bgColor,
-            opacity: fadeAnim,
-          },
-          {
-            transform: [
-              {
-                translateY: slideAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, 300],
-                }),
-              },
-            ],
-          },
-        ]}
+      <LinearGradient
+        colors={theme?.bgGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradient}
       >
-        <LinearGradient
-          colors={theme.bgGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.background}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
         >
-          <SafeAreaView style={{ flex: 1 }}>
-            <View style={[styles.container, { backgroundColor: theme.cardBg }]}>
-              {/* Header */}
-              <View style={styles.header}>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={handleBack}
-                >
-                  <Feather name="arrow-left" size={36} color={theme.textPrimary} />
-                </TouchableOpacity>
-                <View style={[styles.line, { backgroundColor: theme.lineColor }]} />
-                <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>
-                  • LIFE AT THAPAR •
-                </Text>
-                <View style={[styles.line, { backgroundColor: theme.lineColor }]} />
-              </View>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={theme?.textPrimary} />
+          </TouchableOpacity>
 
-              {/* Pages */}
-              <Animated.FlatList
-                ref={flatListRef}
-                data={pages}
-                renderItem={renderPage}
-                keyExtractor={keyExtractor}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                onScroll={onScroll}
-                scrollEventThrottle={100}
-                style={styles.flatList}
-                pagingEnabled
-                disableIntervalMomentum
-                bounces={false}
-                overScrollMode="never"
-                decelerationRate="fast"
-                getItemLayout={getItemLayout}
-                initialNumToRender={pages.length}
-                windowSize={pages.length}
-                maxToRenderPerBatch={pages.length}
-              />
+          <Text style={[styles.eyebrow, { color: theme?.accent }]}>✦  CAMPUS LIFE  ✦</Text>
+          <Text style={[styles.heroTitle, { color: theme?.textPrimary }]}>
+            Life at{'\n'}
+            <Text style={{ color: theme?.accent }}>Thapar</Text>
+          </Text>
+          <Text style={[styles.heroSubtitle, { color: theme?.textSecondary }]}>
+            Beyond classrooms, a world of experiences.
+          </Text>
 
-              {/* Dots */}
-              <PaginationDots scrollX={scrollX} theme={theme} styles={styles} />
+          {/* BENTO GRID */}
+          <View style={styles.bentoRow}>
+            {renderCard(CARD_DATA[0], 0, styles.bentoTall)}
+            <View style={styles.bentoColumn}>
+              {renderCard(CARD_DATA[1], 1, styles.bentoSmall)}
+              {renderCard(CARD_DATA[2], 2, styles.bentoSmall)}
             </View>
-          </SafeAreaView>
-        </LinearGradient>
-      </Animated.View>
+          </View>
+
+          {renderCard(CARD_DATA[3], 3, styles.bentoWide)}
+        </ScrollView>
+      </LinearGradient>
     </View>
   );
-}
+};
 
-// ---------- StyleSheet factory (unchanged) ----------
-const getStyles = (theme) =>
-  StyleSheet.create({
-    background: { flex: 1 },
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  gradient: { flex: 1 },
+  scrollContent: {
+    paddingHorizontal: 22,
+    paddingTop: 55,
+    paddingBottom: 40,
+  },
+  backButton: {
+    marginBottom: 24,
+    width: 32,
+  },
+  eyebrow: {
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 3,
+    marginBottom: 6,
+  },
+  heroTitle: {
+    fontSize: 42,
+    fontWeight: '800',
+    lineHeight: 46,
+    letterSpacing: 0.5,
+  },
+  heroSubtitle: {
+    marginTop: 12,
+    fontSize: 15,
+    lineHeight: 22,
+    maxWidth: '85%',
+  },
+  bentoRow: {
+    flexDirection: 'row',
+    marginTop: 28,
+    gap: 14,
+  },
+  bentoColumn: {
+    flex: 1,
+    gap: 14,
+  },
+  bentoTall: {
+    flex: 1,
+    height: 268,
+    borderRadius: 26,
+    overflow: 'hidden',
+  },
+  bentoSmall: {
+    height: 127,
+    borderRadius: 22,
+    overflow: 'hidden',
+  },
+  bentoWide: {
+    marginTop: 14,
+    height: 110,
+    borderRadius: 24,
+    overflow: 'hidden',
+  },
+  cardTouchable: {
+    flex: 1,
+    position: 'relative',
+  },
+  bgIcon: {
+    position: 'absolute',
+  },
+  bgIconCorner: {
+    bottom: -22,
+    right: -22,
+    transform: [{ rotate: '-12deg' }],
+  },
+  bgIconWide: {
+    top: -18,
+    right: -10,
+    transform: [{ rotate: '10deg' }],
+  },
+  cardContent: {
+    flex: 1,
+    padding: 18,
+    justifyContent: 'flex-end',
+  },
+  wideContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    gap: 14,
+  },
+  wideIconCircle: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardTitleTall: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#fff',
+    letterSpacing: 0.5,
+    lineHeight: 25,
+    marginBottom: 4,
+  },
+  cardTitleSmall: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#fff',
+    letterSpacing: 0.3,
+    lineHeight: 18,
+    marginBottom: 2,
+  },
+  cardTitleWide: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#fff',
+    letterSpacing: 0.4,
+    marginBottom: 2,
+  },
+  cardSubtitle: {
+    fontSize: 12.5,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.85)',
+  },
+});
 
-    container: {
-      flex: 1,
-      marginHorizontal: 18,
-      marginTop: 30,
-      marginBottom: 20,
-      borderRadius: 34,
-      paddingTop: 22,
-      paddingBottom: 20,
-      overflow: "hidden",
-      shadowColor: theme.shadowColor,
-      shadowOpacity: 0.18,
-      shadowRadius: 22,
-      shadowOffset: { width: 0, height: 10 },
-      elevation: 10,
-    },
-
-    header: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingHorizontal: 22,
-      marginBottom: 22,
-    },
-
-    line: {
-      flex: 1,
-      height: 1,
-      marginHorizontal: 12,
-    },
-
-    headerTitle: {
-      fontSize: 18,
-      fontWeight: "700",
-      letterSpacing: 1.5,
-    },
-
-    flatList: { flex: 1 },
-
-    pageContainer: {
-      width: PAGE_WIDTH,
-      flex: 1,
-    },
-
-    pageContent: {
-      paddingBottom: 30,
-    },
-
-    heroSection: {
-      alignItems: "center",
-      marginBottom: 120,
-    },
-
-    heroImage: {
-      width: "88%",
-      height: 300,
-      borderRadius: 30,
-    },
-
-    libraryCard: {
-      position: "absolute",
-      bottom: -92,
-      width: "82%",
-      borderRadius: 28,
-      alignItems: "center",
-      paddingHorizontal: 22,
-      paddingTop: 24,
-      paddingBottom: 22,
-      shadowColor: theme.shadowColor,
-      shadowOpacity: 0.16,
-      shadowRadius: 20,
-      shadowOffset: { width: 0, height: 8 },
-      elevation: 12,
-    },
-
-    libraryTitle: {
-      fontSize: 24,
-      fontWeight: "800",
-      textAlign: "center",
-    },
-
-    blueUnderline: {
-      width: 70,
-      height: 4,
-      borderRadius: 20,
-      marginTop: 10,
-      marginBottom: 14,
-    },
-
-    libraryDescription: {
-      fontSize: 14,
-      lineHeight: 22,
-      textAlign: "center",
-    },
-
-    contentContainer: {
-      paddingHorizontal: 26,
-      marginTop: 10,
-    },
-
-    description: {
-      fontSize: 16,
-      lineHeight: 28,
-      textAlign: "justify",
-      marginBottom: 10,
-    },
-
-    pagination: {
-      flexDirection: "row",
-      justifyContent: "center",
-      alignItems: "center",
-      paddingVertical: 12,
-      marginTop: 4,
-    },
-
-    dot: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-      marginHorizontal: 6,
-    },
-  });
+export default LifeScreen;

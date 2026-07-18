@@ -11,7 +11,11 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import Icon from '@expo/vector-icons/Ionicons';
+
+const GLASS_BG = 'rgba(255, 255, 255, 0.05)';
+const GLASS_SHEEN = ['rgba(255,255,255,0.14)', 'rgba(255,255,255,0)'];
 
 // Fallback theme (used only if no theme is passed at all)
 const fallbackTheme = {
@@ -103,16 +107,27 @@ export default function GirlsScreen({ theme: themeProp }) {
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
             {rooms.map((room) => (
-              <View
+              <BlurView
                 key={room.id}
+                intensity={150}
+                tint="dark"
+                experimentalBlurMethod="dimezisBlurView"
                 style={[
                   styles.hallCard,
                   {
                     borderColor: PURPLE, // ✅ fixed purple outline
-                    backgroundColor: t.cardBg,
+                    backgroundColor: GLASS_BG,
+                    shadowColor: PURPLE,
                   },
                 ]}
               >
+                <LinearGradient
+                  colors={GLASS_SHEEN}
+                  start={{ x: 0.5, y: 0 }}
+                  end={{ x: 0.5, y: 1 }}
+                  style={styles.glassSheen}
+                  pointerEvents="none"
+                />
                 <Image source={room.image} style={styles.hallImage} />
                 <View style={styles.cardContent}>
                   <Text style={[styles.hallTitle, { color: t.textPrimary }]}>
@@ -130,7 +145,7 @@ export default function GirlsScreen({ theme: themeProp }) {
                     {room.capacity}
                   </Text>
                 </View>
-              </View>
+              </BlurView>
             ))}
           </ScrollView>
         </SafeAreaView>
@@ -168,7 +183,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    overflow: 'hidden',
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
     // borderColor is now applied inline as PURPLE
+  },
+  glassSheen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '60%',
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
   },
   hallImage: { width: 90, height: 100, borderRadius: 12 },
   cardContent: { flex: 1, marginLeft: 12, justifyContent: 'center' },

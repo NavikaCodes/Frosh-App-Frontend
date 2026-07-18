@@ -21,6 +21,9 @@ import Icon from '@expo/vector-icons/Ionicons';
 
 const { width, height } = Dimensions.get('window');
 
+const GLASS_BG = 'rgba(255, 255, 255, 0.05)';
+const GLASS_SHEEN = ['rgba(255,255,255,0.14)', 'rgba(255,255,255,0)'];
+
 const fallbackTheme = {
   bgGradient: ['#020B18', '#061528', '#041220'],
   textPrimary: '#FFFFFF',
@@ -172,20 +175,34 @@ export default function SocietiesScreen({ theme: themeProp }) {
                 {filtered.map((society) => (
                   <TouchableOpacity
                     key={society.id}
-                    style={[
-                      styles.card,
-                      {
-                        backgroundColor: t.cardBg,
-                        borderColor: t.lineColor,
-                      },
-                    ]}
+                    style={styles.cardWrapper}
                     onPress={() => openPopup(society)}
                     activeOpacity={0.8}
                   >
-                    <Image source={society.logo} style={styles.cardImage} />
-                    <Text style={[styles.cardName, { color: t.textPrimary }]}>
-                      {society.name}
-                    </Text>
+                    <BlurView
+                      intensity={150}
+                      tint="dark"
+                      experimentalBlurMethod="dimezisBlurView"
+                      style={[
+                        styles.card,
+                        {
+                          backgroundColor: GLASS_BG,
+                          borderColor: t.lineColor,
+                        },
+                      ]}
+                    >
+                      <LinearGradient
+                        colors={GLASS_SHEEN}
+                        start={{ x: 0.5, y: 0 }}
+                        end={{ x: 0.5, y: 1 }}
+                        style={styles.glassSheen}
+                        pointerEvents="none"
+                      />
+                      <Image source={society.logo} style={styles.cardImage} />
+                      <Text style={[styles.cardName, { color: t.textPrimary }]}>
+                        {society.name}
+                      </Text>
+                    </BlurView>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -203,15 +220,26 @@ export default function SocietiesScreen({ theme: themeProp }) {
             tint={isDarkTheme ? 'dark' : 'light'}
           >
             <TouchableWithoutFeedback onPress={() => {}}>
-              <View
+              <BlurView
+                intensity={150}
+                tint="dark"
+                experimentalBlurMethod="dimezisBlurView"
                 style={[
                   styles.popupCard,
                   {
-                    backgroundColor: t.modalBg || t.cardBg,
+                    backgroundColor: GLASS_BG,
+                    borderColor: t.lineColor,
                     shadowColor: t.shadowColor,
                   },
                 ]}
               >
+                <LinearGradient
+                  colors={GLASS_SHEEN}
+                  start={{ x: 0.5, y: 0 }}
+                  end={{ x: 0.5, y: 1 }}
+                  style={styles.glassSheen}
+                  pointerEvents="none"
+                />
                 <View style={styles.popupHeader}>
                   <Image source={selectedSociety?.logo} style={styles.popupLogo} />
                   <Text style={[styles.popupName, { color: t.textPrimary }]}>
@@ -227,7 +255,7 @@ export default function SocietiesScreen({ theme: themeProp }) {
                 >
                   <Text style={styles.closeText}>Close</Text>
                 </TouchableOpacity>
-              </View>
+              </BlurView>
             </TouchableWithoutFeedback>
           </BlurView>
         </TouchableWithoutFeedback>
@@ -277,13 +305,29 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
-  card: {
+  cardWrapper: {
     width: '48%',
     marginBottom: 16,
+  },
+  card: {
     borderRadius: 16,
     paddingVertical: 12,
     alignItems: 'center',
     borderWidth: 1,
+    overflow: 'hidden',
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 5,
+  },
+  glassSheen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '55%',
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
   },
   cardImage: {
     width: 80,
@@ -305,6 +349,8 @@ const styles = StyleSheet.create({
     width: width * 0.85,
     borderRadius: 28,
     padding: 24,
+    borderWidth: 1,
+    overflow: 'hidden',
     shadowOpacity: 0.3,
     shadowRadius: 20,
     elevation: 10,

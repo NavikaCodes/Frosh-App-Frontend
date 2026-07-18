@@ -14,9 +14,13 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import Icon from '@expo/vector-icons/Ionicons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Feather from '@expo/vector-icons/Feather';
+
+const GLASS_BG = 'rgba(255, 255, 255, 0.05)';
+const GLASS_SHEEN = ['rgba(255,255,255,0.14)', 'rgba(255,255,255,0)'];
 
 const fallbackTheme = {
   bgGradient: ['#020B18', '#061528', '#041220'],
@@ -119,7 +123,19 @@ export default function HostelsScreen() {
                 activeOpacity={0.7}
                 onPress={() => navigation.navigate('Boys', { theme })}
               >
-                <View style={[styles.hostelCard, { borderColor: theme.accent, backgroundColor: theme.cardBg }]}>
+                <BlurView
+                  intensity={150}
+                  tint="dark"
+                  experimentalBlurMethod="dimezisBlurView"
+                  style={[styles.hostelCard, { borderColor: theme.accent, backgroundColor: GLASS_BG, shadowColor: theme.accent }]}
+                >
+                  <LinearGradient
+                    colors={GLASS_SHEEN}
+                    start={{ x: 0.5, y: 0 }}
+                    end={{ x: 0.5, y: 1 }}
+                    style={styles.glassSheen}
+                    pointerEvents="none"
+                  />
                   <Image source={require('../assets/cos.avif')} style={styles.hostelImage} />
                   <View style={styles.cardContent}>
                     <View>
@@ -143,7 +159,7 @@ export default function HostelsScreen() {
                       </View>
                     </View>
                   </View>
-                </View>
+                </BlurView>
               </TouchableOpacity>
 
               {/* GIRLS HOSTEL */}
@@ -151,7 +167,19 @@ export default function HostelsScreen() {
                 activeOpacity={0.7}
                 onPress={() => navigation.navigate('Girls', { theme })}
               >
-                <View style={[styles.hostelCardPurple, { backgroundColor: theme.cardBg }]}>
+                <BlurView
+                  intensity={150}
+                  tint="dark"
+                  experimentalBlurMethod="dimezisBlurView"
+                  style={[styles.hostelCardPurple, { backgroundColor: GLASS_BG, shadowColor: '#A86CFF' }]}
+                >
+                  <LinearGradient
+                    colors={GLASS_SHEEN}
+                    start={{ x: 0.5, y: 0 }}
+                    end={{ x: 0.5, y: 1 }}
+                    style={styles.glassSheen}
+                    pointerEvents="none"
+                  />
                   <Image source={require('../assets/cos.avif')} style={styles.hostelImage} />
                   <View style={styles.cardContent}>
                     <View>
@@ -176,11 +204,23 @@ export default function HostelsScreen() {
                       </View>
                     </View>
                   </View>
-                </View>
+                </BlurView>
               </TouchableOpacity>
 
               {/* Safe & Secure */}
-              <View style={[styles.securityCard, { borderColor: theme.accent, backgroundColor: theme.cardBg }]}>
+              <BlurView
+                intensity={150}
+                tint="dark"
+                experimentalBlurMethod="dimezisBlurView"
+                style={[styles.securityCard, { borderColor: theme.accent, backgroundColor: GLASS_BG, shadowColor: theme.accent }]}
+              >
+                <LinearGradient
+                  colors={GLASS_SHEEN}
+                  start={{ x: 0.5, y: 0 }}
+                  end={{ x: 0.5, y: 1 }}
+                  style={styles.glassSheen}
+                  pointerEvents="none"
+                />
                 <View style={styles.securityLeft}>
                   <MaterialCommunityIcons name="shield-check-outline" size={34} color={theme.accent} />
                   <View style={{ marginLeft: 12 }}>
@@ -189,7 +229,7 @@ export default function HostelsScreen() {
                     <Text style={[styles.securityText, { color: theme.textSecondary }]}>for a worry-free stay.</Text>
                   </View>
                 </View>
-              </View>
+              </BlurView>
             </ScrollView>
           </SafeAreaView>
         </LinearGradient>
@@ -231,6 +271,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     flexDirection: 'row',
+    overflow: 'hidden',
+    shadowOpacity: 0.15,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
   },
   hostelCardPurple: {
     marginHorizontal: 16,
@@ -240,6 +285,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#8F5BFF',
     flexDirection: 'row',
+    overflow: 'hidden',
+    shadowOpacity: 0.15,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+  },
+  glassSheen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '55%',
+    borderTopLeftRadius: 19,
+    borderTopRightRadius: 19,
   },
   hostelImage: { width: 120, height: 150, borderRadius: 16 },
   cardContent: { flex: 1, marginLeft: 14, justifyContent: 'space-between' },
@@ -259,6 +318,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    overflow: 'hidden',
+    shadowOpacity: 0.15,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
   },
   securityLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   securityTitle: { fontSize: 18, fontWeight: '700' },

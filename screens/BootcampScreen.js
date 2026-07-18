@@ -8,10 +8,15 @@ import {
   Image,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
 import {
   Ionicons,
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
+
+const GLASS_BG = "rgba(255, 255, 255, 0.05)";
+const GLASS_BORDER = "rgba(255, 255, 255, 0.2)";
+const GLASS_SHEEN = ["rgba(255,255,255,0.14)", "rgba(255,255,255,0)"];
 
 export default function BootcampScreen({ theme }) {
   // use theme if provided, else fallback colours
@@ -35,15 +40,26 @@ export default function BootcampScreen({ theme }) {
           <View style={[styles.headingLine, { backgroundColor: lineColor }]} />
         </View>
 
-        <View
+        <BlurView
+          intensity={150}
+          tint="dark"
+          experimentalBlurMethod="dimezisBlurView"
           style={[
             styles.liveCard,
             {
-              backgroundColor: cardBg,
+              backgroundColor: GLASS_BG,
+              borderColor: GLASS_BORDER,
               shadowColor: shadowColor,
             },
           ]}
         >
+          <LinearGradient
+            colors={GLASS_SHEEN}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={styles.glassSheen}
+            pointerEvents="none"
+          />
           <LinearGradient
             colors={["#4DA2FF", "#2D7EFF"]}
             style={styles.liveIcon}
@@ -68,7 +84,7 @@ export default function BootcampScreen({ theme }) {
             <View style={styles.liveDot} />
             <Text style={styles.liveBadgeText}>LIVE</Text>
           </View>
-        </View>
+        </BlurView>
       </View>
 
       {/* ===== TIMETABLE ===== */}
@@ -77,15 +93,26 @@ export default function BootcampScreen({ theme }) {
         <Text style={[styles.timeTableTitle, { color: textPrimary }]}>My Timetable</Text>
       </View>
 
-      <View
+      <BlurView
+        intensity={150}
+        tint="dark"
+        experimentalBlurMethod="dimezisBlurView"
         style={[
           styles.timetableCard,
           {
-            backgroundColor: cardBg,
+            backgroundColor: GLASS_BG,
+            borderColor: GLASS_BORDER,
             shadowColor: shadowColor,
           },
         ]}
       >
+        <LinearGradient
+          colors={GLASS_SHEEN}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={styles.glassSheen}
+          pointerEvents="none"
+        />
         <View style={styles.tableHeader}>
           <Text style={[styles.headerCell, { flex: 1.4, color: textSecondary }]}>Time</Text>
           <Text style={[styles.headerCell, { color: textSecondary }]}>Mon</Text>
@@ -166,7 +193,7 @@ export default function BootcampScreen({ theme }) {
         </View>
 
         <Text style={[styles.note, { color: textSecondary }]}>* Timetable is subject to change</Text>
-      </View>
+      </BlurView>
 
       
     </ScrollView>
@@ -195,11 +222,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 24,
     padding: 16,
+    overflow: "hidden",
+    borderWidth: 1,
     shadowOpacity: 0.12,
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 8 },
     elevation: 8,
     marginBottom: 24,
+  },
+  glassSheen: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: "55%",
+    borderTopLeftRadius: 23,
+    borderTopRightRadius: 23,
   },
   liveIcon: {
     width: 56,
@@ -239,6 +277,8 @@ const styles = StyleSheet.create({
   timetableCard: {
     borderRadius: 24,
     padding: 16,
+    overflow: "hidden",
+    borderWidth: 1,
     shadowOpacity: 0.12,
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 8 },

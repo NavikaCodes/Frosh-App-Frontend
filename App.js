@@ -19,6 +19,10 @@ import ConnectScreen from './screens/ConnectScreen';
 import AboutFroshScreen from './screens/AboutFroshScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import ScheduleScreen from './screens/ScheduleScreen';
+import EateryScreen from './screens/EateryScreen';
+import SportsScreen from './screens/SportsScreen';
+import StudyScreen from './screens/StudyScreen';
+import CulturalScreen from './screens/CulturalScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -183,6 +187,10 @@ export default function App() {
     presentation: 'transparentModal',   
   }}
 />
+<Stack.Screen name="EateryPoints" component={EateryScreen} />
+<Stack.Screen name="SportsComplex" component={SportsScreen} />
+<Stack.Screen name="StudyZones" component={StudyScreen} />
+<Stack.Screen name="CulturalCentres" component={CulturalScreen} />
           
         </Stack.Navigator>
       </NavigationContainer>

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useRef, useCallback, useMemo, memo, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,21 +9,19 @@ import {
   TouchableOpacity,
   Image,
   FlatList,
+  Animated,
+  Easing,
   Dimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import {
-  Feather,
-  Ionicons,
-  MaterialCommunityIcons,
-} from "@expo/vector-icons";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import { useRoute } from "@react-navigation/native";
 import { lightTheme, darkTheme } from "./themes";
 
 const { width } = Dimensions.get("window");
 const PAGE_WIDTH = width - 36;
 
-// ----- Page Data (4 pages) – cardTitle & cardDescription kept for floating card -----
+// ----- Page Data (4 pages) -----
 const pages = [
   {
     id: "1",
@@ -60,123 +58,270 @@ const pages = [
   },
 ];
 
+// ---------------------------------------------------------------------------
+// PageItem — memoized (unchanged)
+// ---------------------------------------------------------------------------
+const PageItem = memo(function PageItem({ item, index, theme, isDark, styles, scrollX }) {
+  const { opacity, translateY } = useMemo(() => {
+    const inputRange = [
+      (index - 1) * PAGE_WIDTH,
+      index * PAGE_WIDTH,
+      (index + 1) * PAGE_WIDTH,
+    ];
+    return {
+      opacity: scrollX.interpolate({
+        inputRange,
+        outputRange: [0.55, 1, 0.55],
+        extrapolate: "clamp",
+      }),
+      translateY: scrollX.interpolate({
+        inputRange,
+        outputRange: [10, 0, 10],
+        extrapolate: "clamp",
+      }),
+    };
+  }, [index, scrollX]);
+
+  return (
+    <View style={styles.pageContainer}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.pageContent}
+        nestedScrollEnabled
+      >
+        <Animated.View style={{ opacity, transform: [{ translateY }] }}>
+          {/* Hero Section with floating card */}
+          <View style={styles.heroSection}>
+            <Image
+              source={item.heroImage}
+              resizeMode="cover"
+              style={styles.heroImage}
+            />
+
+            {/* Floating Card */}
+            <View
+              style={[
+                styles.libraryCard,
+                { backgroundColor: theme.cardBg || (isDark ? "#1A2040" : "#FFFFFF") },
+              ]}
+            >
+              <Text style={[styles.libraryTitle, { color: theme.textPrimary }]}>
+                {item.cardTitle}
+              </Text>
+              <View style={[styles.blueUnderline, { backgroundColor: theme.accent }]} />
+              <Text style={[styles.libraryDescription, { color: theme.textSecondary }]}>
+                {item.cardDescription}
+              </Text>
+            </View>
+          </View>
+
+          {/* Description */}
+          <View style={styles.contentContainer}>
+            <Text style={[styles.description, { color: theme.textSecondary }]}>
+              {item.description}
+            </Text>
+          </View>
+        </Animated.View>
+      </ScrollView>
+    </View>
+  );
+});
+
+// ---------------------------------------------------------------------------
+// PaginationDots — memoized (unchanged)
+// ---------------------------------------------------------------------------
+const PaginationDots = memo(function PaginationDots({ scrollX, theme, styles }) {
+  return (
+    <View style={styles.pagination}>
+      {pages.map((_, dotIndex) => {
+        const dotInputRange = [
+          (dotIndex - 1) * PAGE_WIDTH,
+          dotIndex * PAGE_WIDTH,
+          (dotIndex + 1) * PAGE_WIDTH,
+        ];
+        const dotScaleX = scrollX.interpolate({
+          inputRange: dotInputRange,
+          outputRange: [1, 2.5, 1],
+          extrapolate: "clamp",
+        });
+        const dotOpacity = scrollX.interpolate({
+          inputRange: dotInputRange,
+          outputRange: [0.4, 1, 0.4],
+          extrapolate: "clamp",
+        });
+
+        return (
+          <Animated.View
+            key={dotIndex}
+            style={[
+              styles.dot,
+              {
+                backgroundColor: theme.accent,
+                opacity: dotOpacity,
+                transform: [{ scaleX: dotScaleX }],
+              },
+            ]}
+          />
+        );
+      })}
+    </View>
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Main Component
+// ---------------------------------------------------------------------------
 export default function LifeScreen({ navigation }) {
   const route = useRoute();
   const theme = route.params?.theme || lightTheme;
   const isDark = theme === darkTheme;
 
-  console.log("LifeScreen theme:", isDark ? "darkTheme" : "lightTheme");
+  // --- Animations ---
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const isNavigating = useRef(false);
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const flatListRef = useRef(null);
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
-  const onScroll = (event) => {
-    const offsetX = event.nativeEvent.contentOffset.x;
-    const index = Math.round(offsetX / PAGE_WIDTH);
-    setCurrentIndex(index);
+  const handleBack = () => {
+    if (isNavigating.current) return;
+    isNavigating.current = true;
+
+    Animated.timing(slideAnim, {
+      toValue: 1,
+      duration: 250,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start(() => {
+      navigation.goBack();
+    });
   };
 
+  const flatListRef = useRef(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
+
+  const onScroll = useRef(
+    Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
+      useNativeDriver: true,
+    })
+  ).current;
+
   const styles = getStyles(theme);
+  const bgColor = theme.bgGradient?.[0] || (isDark ? '#020B18' : '#F5F5F5');
 
-  const renderPage = ({ item }) => (
-    <ScrollView
-      style={styles.pageContainer}
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.pageContent}
-    >
-      {/* Hero Section with floating card */}
-      <View style={styles.heroSection}>
-        <Image
-          source={item.heroImage}
-          resizeMode="cover"
-          style={styles.heroImage}
-        />
+  const renderPage = useCallback(
+    ({ item, index }) => (
+      <PageItem
+        item={item}
+        index={index}
+        theme={theme}
+        isDark={isDark}
+        styles={styles}
+        scrollX={scrollX}
+      />
+    ),
+    [theme, isDark, styles, scrollX]
+  );
 
-        {/* Floating Card (kept) */}
-        <View style={[
-          styles.libraryCard,
-          { backgroundColor: theme.cardBg || (isDark ? '#1A2040' : '#FFFFFF') }
-        ]}>
-          <Text style={styles.libraryTitle}>{item.cardTitle}</Text>
-          <View style={styles.blueUnderline} />
-          <Text style={styles.libraryDescription}>
-            {item.cardDescription}
-          </Text>
-        </View>
-      </View>
-
-      {/* Description (no quote card) */}
-      <View style={styles.contentContainer}>
-        <Text style={styles.description}>{item.description}</Text>
-      </View>
-
-      {/* Dots */}
-      <View style={styles.pagination}>
-        {pages.map((_, dotIndex) => (
-          <View
-            key={dotIndex}
-            style={[
-              styles.dot,
-              dotIndex === currentIndex && styles.activeDot,
-            ]}
-          />
-        ))}
-      </View>
-    </ScrollView>
+  const keyExtractor = useCallback((item) => item.id, []);
+  const getItemLayout = useCallback(
+    (data, index) => ({
+      length: PAGE_WIDTH,
+      offset: PAGE_WIDTH * index,
+      index,
+    }),
+    []
   );
 
   return (
-    <>
+    <View style={{ flex: 1, backgroundColor: bgColor }}>
       <StatusBar
         translucent
         backgroundColor="transparent"
         barStyle={isDark ? "light-content" : "dark-content"}
       />
-
-      <LinearGradient
-        colors={theme.bgGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.background}
+      <Animated.View
+        style={[
+          {
+            flex: 1,
+            backgroundColor: bgColor,
+            opacity: fadeAnim,
+          },
+          {
+            transform: [
+              {
+                translateY: slideAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 300],
+                }),
+              },
+            ],
+          },
+        ]}
       >
-        <SafeAreaView style={{ flex: 1 }}>
-          <View style={[styles.container, { backgroundColor: theme.cardBg }]}>
-            {/* Header */}
-            <View style={styles.header}>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => navigation.goBack()}
-              >
-                <Feather name="arrow-left" size={36} color={theme.textPrimary} />
-              </TouchableOpacity>
-              <View style={styles.line} />
-              <Text style={styles.headerTitle}>• LIFE AT THAPAR •</Text>
-              <View style={styles.line} />
-            </View>
+        <LinearGradient
+          colors={theme.bgGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.background}
+        >
+          <SafeAreaView style={{ flex: 1 }}>
+            <View style={[styles.container, { backgroundColor: theme.cardBg }]}>
+              {/* Header */}
+              <View style={styles.header}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={handleBack}
+                >
+                  <Feather name="arrow-left" size={36} color={theme.textPrimary} />
+                </TouchableOpacity>
+                <View style={[styles.line, { backgroundColor: theme.lineColor }]} />
+                <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>
+                  • LIFE AT THAPAR •
+                </Text>
+                <View style={[styles.line, { backgroundColor: theme.lineColor }]} />
+              </View>
 
-            {/* Pages */}
-            <FlatList
-              ref={flatListRef}
-              data={pages}
-              renderItem={renderPage}
-              keyExtractor={(item) => item.id}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              onScroll={onScroll}
-              scrollEventThrottle={16}
-              style={styles.flatList}
-              snapToInterval={PAGE_WIDTH}
-              snapToAlignment="start"
-              decelerationRate="fast"
-            />
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
-    </>
+              {/* Pages */}
+              <Animated.FlatList
+                ref={flatListRef}
+                data={pages}
+                renderItem={renderPage}
+                keyExtractor={keyExtractor}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                onScroll={onScroll}
+                scrollEventThrottle={100}
+                style={styles.flatList}
+                pagingEnabled
+                disableIntervalMomentum
+                bounces={false}
+                overScrollMode="never"
+                decelerationRate="fast"
+                getItemLayout={getItemLayout}
+                initialNumToRender={pages.length}
+                windowSize={pages.length}
+                maxToRenderPerBatch={pages.length}
+              />
+
+              {/* Dots */}
+              <PaginationDots scrollX={scrollX} theme={theme} styles={styles} />
+            </View>
+          </SafeAreaView>
+        </LinearGradient>
+      </Animated.View>
+    </View>
   );
 }
 
-// ---------- StyleSheet factory ----------
+// ---------- StyleSheet factory (unchanged) ----------
 const getStyles = (theme) =>
   StyleSheet.create({
     background: { flex: 1 },
@@ -208,14 +353,12 @@ const getStyles = (theme) =>
     line: {
       flex: 1,
       height: 1,
-      backgroundColor: theme.lineColor,
       marginHorizontal: 12,
     },
 
     headerTitle: {
       fontSize: 18,
       fontWeight: "700",
-      color: theme.textPrimary,
       letterSpacing: 1.5,
     },
 
@@ -232,7 +375,7 @@ const getStyles = (theme) =>
 
     heroSection: {
       alignItems: "center",
-      marginBottom: 120,      // space for the floating card
+      marginBottom: 120,
     },
 
     heroImage: {
@@ -260,7 +403,6 @@ const getStyles = (theme) =>
     libraryTitle: {
       fontSize: 24,
       fontWeight: "800",
-      color: theme.textPrimary,
       textAlign: "center",
     },
 
@@ -268,7 +410,6 @@ const getStyles = (theme) =>
       width: 70,
       height: 4,
       borderRadius: 20,
-      backgroundColor: theme.accent,
       marginTop: 10,
       marginBottom: 14,
     },
@@ -276,7 +417,6 @@ const getStyles = (theme) =>
     libraryDescription: {
       fontSize: 14,
       lineHeight: 22,
-      color: theme.textSecondary,
       textAlign: "center",
     },
 
@@ -287,7 +427,6 @@ const getStyles = (theme) =>
 
     description: {
       fontSize: 16,
-      color: theme.textSecondary,
       lineHeight: 28,
       textAlign: "justify",
       marginBottom: 10,
@@ -305,12 +444,6 @@ const getStyles = (theme) =>
       width: 8,
       height: 8,
       borderRadius: 4,
-      backgroundColor: "#D3E3F5",
       marginHorizontal: 6,
-    },
-
-    activeDot: {
-      backgroundColor: theme.accent,
-      width: 20,
     },
   });

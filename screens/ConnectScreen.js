@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   SafeAreaView,
   View,
@@ -11,6 +11,8 @@ import {
   TouchableWithoutFeedback,
   Linking,
   Dimensions,
+  Animated,
+  Easing,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,7 +21,6 @@ import { Feather } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
 
-// Fallback theme (used only if no theme is passed at all)
 const fallbackTheme = {
   bgGradient: ['#020B18', '#061528', '#041220'],
   textPrimary: '#FFFFFF',
@@ -50,10 +51,37 @@ export default function HelpSupportScreen({ theme: themeProp }) {
   const route = useRoute();
 
   const t = themeProp || route.params?.theme || fallbackTheme;
-
   const isDarkTheme = t.textPrimary?.toUpperCase() === '#FFFFFF';
 
   const [modalVisible, setModalVisible] = useState(false);
+
+  // --- Animations ---
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const isNavigating = useRef(false);
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  const handleBack = () => {
+    if (isNavigating.current) return;
+    isNavigating.current = true;
+
+    Animated.timing(slideAnim, {
+      toValue: 1,
+      duration: 250,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start(() => {
+      navigation.goBack();
+    });
+  };
 
   const handlePress = (item) => {
     if (item.id === 'phone') {
@@ -65,60 +93,82 @@ export default function HelpSupportScreen({ theme: themeProp }) {
 
   const renderIcon = (item) => {
     const color = t.textPrimary;
-    const size = 48; // larger icon
+    const size = 48;
     if (item.iconSet === 'Feather') {
       return <Feather name={item.icon} size={size} color={color} />;
     }
     return <Icon name={item.icon} size={size} color={color} />;
   };
 
+  const bgColor = t.bgGradient?.[0] || '#020B18';
+
   return (
-    <>
+    <View style={{ flex: 1, backgroundColor: bgColor }}>
       <StatusBar
         translucent
         backgroundColor="transparent"
         barStyle={isDarkTheme ? 'light-content' : 'dark-content'}
       />
-      <LinearGradient colors={t.bgGradient} style={styles.container}>
-        <SafeAreaView style={{ flex: 1 }}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-              <Icon name="arrow-back" size={24} color={t.textPrimary} />
-            </TouchableOpacity>
-            <Text style={[styles.title, { color: t.textPrimary }]}>Connect with us</Text>
-            <View style={{ width: 40 }} />
-          </View>
-
-          {/* Subtitle */}
-          <Text style={[styles.subtitle, { color: t.textSecondary }]}>
-            Connect with us through any of these channels
-          </Text>
-
-          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-            <View style={styles.grid}>
-              {helpLinks.map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  style={[
-                    styles.card,
-                    { backgroundColor: t.cardBg, borderColor: t.lineColor },
-                  ]}
-                  onPress={() => handlePress(item)}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.iconCircle, { borderColor: t.accent }]}>
-                    {renderIcon(item)}
-                  </View>
-                  <Text style={[styles.label, { color: t.textPrimary }]}>{item.label}</Text>
-                </TouchableOpacity>
-              ))}
+      <Animated.View
+        style={[
+          {
+            flex: 1,
+            backgroundColor: bgColor,
+            opacity: fadeAnim,
+          },
+          {
+            transform: [
+              {
+                translateY: slideAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 300],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
+        <LinearGradient colors={t.bgGradient} style={styles.container}>
+          <SafeAreaView style={{ flex: 1 }}>
+            {/* Header */}
+            <View style={styles.header}>
+              <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
+                <Icon name="arrow-back" size={24} color={t.textPrimary} />
+              </TouchableOpacity>
+              <Text style={[styles.title, { color: t.textPrimary }]}>Connect with us</Text>
+              <View style={{ width: 40 }} />
             </View>
-          </ScrollView>
-        </SafeAreaView>
-      </LinearGradient>
 
-      {/* Phone Modal */}
+            {/* Subtitle */}
+            <Text style={[styles.subtitle, { color: t.textSecondary }]}>
+              Connect with us through any of these channels
+            </Text>
+
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+              <View style={styles.grid}>
+                {helpLinks.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[
+                      styles.card,
+                      { backgroundColor: t.cardBg, borderColor: t.lineColor },
+                    ]}
+                    onPress={() => handlePress(item)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.iconCircle, { borderColor: t.accent }]}>
+                      {renderIcon(item)}
+                    </View>
+                    <Text style={[styles.label, { color: t.textPrimary }]}>{item.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </SafeAreaView>
+        </LinearGradient>
+      </Animated.View>
+
+      {/* Phone Modal (unchanged) */}
       <Modal visible={modalVisible} transparent animationType="fade">
         <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
           <View
@@ -164,11 +214,12 @@ export default function HelpSupportScreen({ theme: themeProp }) {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // ... (unchanged)
   container: { flex: 1 },
   header: {
     flexDirection: 'row',

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   SafeAreaView,
   View,
@@ -8,6 +8,8 @@ import {
   ScrollView,
   StatusBar,
   Image,
+  Animated,
+  Easing,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -33,114 +35,164 @@ export default function AboutFroshScreen({ theme: themeProp }) {
   const t = themeProp || route.params?.theme || fallbackTheme;
   const isDarkTheme = t.textPrimary?.toUpperCase() === '#FFFFFF';
 
+  // --- Animations ---
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const isNavigating = useRef(false);
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  const handleBack = () => {
+    if (isNavigating.current) return;
+    isNavigating.current = true;
+
+    Animated.timing(slideAnim, {
+      toValue: 1,
+      duration: 250,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start(() => {
+      navigation.goBack();
+    });
+  };
+
+  const bgColor = t.bgGradient?.[0] || '#020B18';
+
   return (
-    <>
+    <View style={{ flex: 1, backgroundColor: bgColor }}>
       <StatusBar
         translucent
         backgroundColor="transparent"
         barStyle={isDarkTheme ? 'light-content' : 'dark-content'}
       />
-      <LinearGradient colors={t.bgGradient} style={styles.container}>
-        <SafeAreaView style={{ flex: 1 }}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.goBack()}>
-              <Icon name="arrow-back" size={24} color={t.textPrimary} />
-            </TouchableOpacity>
+      <Animated.View
+        style={[
+          {
+            flex: 1,
+            backgroundColor: bgColor,
+            opacity: fadeAnim,
+          },
+          {
+            transform: [
+              {
+                translateY: slideAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 300],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
+        <LinearGradient colors={t.bgGradient} style={styles.container}>
+          <SafeAreaView style={{ flex: 1 }}>
+            {/* Header */}
+            <View style={styles.header}>
+              <TouchableOpacity style={styles.iconBtn} onPress={handleBack}>
+                <Icon name="arrow-back" size={24} color={t.textPrimary} />
+              </TouchableOpacity>
 
-            <View style={styles.titleRow}>
-              <View style={[styles.dot, { backgroundColor: BRAND_PURPLE }]} />
-              <Text style={[styles.title, { color: t.textPrimary }]}>ABOUT FROSH</Text>
-              <View style={[styles.dot, { backgroundColor: BRAND_PURPLE }]} />
+              <View style={styles.titleRow}>
+                <View style={[styles.dot, { backgroundColor: BRAND_PURPLE }]} />
+                <Text style={[styles.title, { color: t.textPrimary }]}>ABOUT FROSH</Text>
+                <View style={[styles.dot, { backgroundColor: BRAND_PURPLE }]} />
+              </View>
+
+              <TouchableOpacity style={[styles.iconBtn, styles.infoBtn, { borderColor: BRAND_PURPLE }]}>
+                <Icon name="information-circle-outline" size={22} color={BRAND_PURPLE} />
+              </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={[styles.iconBtn, styles.infoBtn, { borderColor: BRAND_PURPLE }]}>
-              <Icon name="information-circle-outline" size={22} color={BRAND_PURPLE} />
-            </TouchableOpacity>
-          </View>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+              <View
+                style={[
+                  styles.bigCard,
+                  { backgroundColor: t.cardBg, borderColor: BRAND_PURPLE, shadowColor: BRAND_PURPLE },
+                ]}
+              >
+                {/* Logo */}
+                <View style={styles.logoContainer}>
+                  <Image source={require('../assets/logo.png')} style={styles.logoImage} />
+                </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-            <View
-              style={[
-                styles.bigCard,
-                { backgroundColor: t.cardBg, borderColor: BRAND_PURPLE, shadowColor: BRAND_PURPLE },
-              ]}
-            >
-              {/* ✅ Only the logo image – removed the text "FR" "SH" "2026" */}
-              <View style={styles.logoContainer}>
-                <Image source={require('../assets/logo.png')} style={styles.logoImage} />
+                {/* Divider */}
+                <View style={styles.dividerRow}>
+                  <View style={[styles.dividerLine, { backgroundColor: t.lineColor }]} />
+                  <Icon name="sparkles" size={16} color={BRAND_PURPLE} style={{ marginHorizontal: 10 }} />
+                  <View style={[styles.dividerLine, { backgroundColor: t.lineColor }]} />
+                </View>
+
+                {/* Who We Are */}
+                <View style={styles.sectionRow}>
+                  <View style={[styles.sectionIconCircle, { borderColor: BRAND_PURPLE }]}>
+                    <Icon name="people" size={22} color={BRAND_PURPLE} />
+                  </View>
+                  <View style={styles.sectionTextContainer}>
+                    <Text style={[styles.sectionTitle, { color: BRAND_PURPLE }]}>Who We Are</Text>
+                    <Text style={[styles.sectionBody, { color: t.textSecondary }]}>
+                      Frosh is the official cultural and student engagement committee of TIET. We
+                      are a vibrant community of dreamers, doers and creators who believe in
+                      turning ideas into unforgettable experiences.
+                    </Text>
+                  </View>
+                </View>
+
+                {/* What We Do */}
+                <View style={styles.sectionRow}>
+                  <View style={[styles.sectionIconCircle, { borderColor: BRAND_PURPLE }]}>
+                    <Icon name="star-outline" size={22} color={BRAND_PURPLE} />
+                  </View>
+                  <View style={styles.sectionTextContainer}>
+                    <Text style={[styles.sectionTitle, { color: BRAND_PURPLE }]}>What We Do</Text>
+                    <Text style={[styles.sectionBody, { color: t.textSecondary }]}>
+                      From curating exciting events to celebrating talent and building
+                      connections, we work to enrich student life beyond the classroom.
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Our Mission */}
+                <View style={styles.sectionRow}>
+                  <View style={[styles.sectionIconCircle, { borderColor: BRAND_PURPLE }]}>
+                    <MaterialCommunityIcons name="target" size={22} color={BRAND_PURPLE} />
+                  </View>
+                  <View style={styles.sectionTextContainer}>
+                    <Text style={[styles.sectionTitle, { color: BRAND_PURPLE }]}>Our Mission</Text>
+                    <Text style={[styles.sectionBody, { color: t.textSecondary }]}>
+                      To inspire creativity, encourage collaboration and create a platform where
+                      every student feels seen, heard and valued.
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Quote */}
+                <View style={[styles.quoteCard, { borderColor: BRAND_PURPLE }]}>
+                  <Text style={[styles.quoteMark, { color: BRAND_PURPLE }]}>{'\u201C'}</Text>
+                  <View style={styles.quoteTextContainer}>
+                    <Text style={[styles.quoteText, { color: t.textPrimary }]}>
+                      Frosh is not just a committee, it's a movement. It's where memories are made.
+                    </Text>
+                  </View>
+                  <Icon name="compass-outline" size={30} color={BRAND_PURPLE} style={styles.quoteCompass} />
+                </View>
               </View>
-
-              {/* Divider */}
-              <View style={styles.dividerRow}>
-                <View style={[styles.dividerLine, { backgroundColor: t.lineColor }]} />
-                <Icon name="sparkles" size={16} color={BRAND_PURPLE} style={{ marginHorizontal: 10 }} />
-                <View style={[styles.dividerLine, { backgroundColor: t.lineColor }]} />
-              </View>
-
-              {/* Who We Are */}
-              <View style={styles.sectionRow}>
-                <View style={[styles.sectionIconCircle, { borderColor: BRAND_PURPLE }]}>
-                  <Icon name="people" size={22} color={BRAND_PURPLE} />
-                </View>
-                <View style={styles.sectionTextContainer}>
-                  <Text style={[styles.sectionTitle, { color: BRAND_PURPLE }]}>Who We Are</Text>
-                  <Text style={[styles.sectionBody, { color: t.textSecondary }]}>
-                    Frosh is the official cultural and student engagement committee of TIET. We
-                    are a vibrant community of dreamers, doers and creators who believe in
-                    turning ideas into unforgettable experiences.
-                  </Text>
-                </View>
-              </View>
-
-              {/* What We Do */}
-              <View style={styles.sectionRow}>
-                <View style={[styles.sectionIconCircle, { borderColor: BRAND_PURPLE }]}>
-                  <Icon name="star-outline" size={22} color={BRAND_PURPLE} />
-                </View>
-                <View style={styles.sectionTextContainer}>
-                  <Text style={[styles.sectionTitle, { color: BRAND_PURPLE }]}>What We Do</Text>
-                  <Text style={[styles.sectionBody, { color: t.textSecondary }]}>
-                    From curating exciting events to celebrating talent and building
-                    connections, we work to enrich student life beyond the classroom.
-                  </Text>
-                </View>
-              </View>
-
-              {/* Our Mission */}
-              <View style={styles.sectionRow}>
-                <View style={[styles.sectionIconCircle, { borderColor: BRAND_PURPLE }]}>
-                  <MaterialCommunityIcons name="target" size={22} color={BRAND_PURPLE} />
-                </View>
-                <View style={styles.sectionTextContainer}>
-                  <Text style={[styles.sectionTitle, { color: BRAND_PURPLE }]}>Our Mission</Text>
-                  <Text style={[styles.sectionBody, { color: t.textSecondary }]}>
-                    To inspire creativity, encourage collaboration and create a platform where
-                    every student feels seen, heard and valued.
-                  </Text>
-                </View>
-              </View>
-
-              {/* Quote */}
-              <View style={[styles.quoteCard, { borderColor: BRAND_PURPLE }]}>
-                <Text style={[styles.quoteMark, { color: BRAND_PURPLE }]}>{'\u201C'}</Text>
-                <View style={styles.quoteTextContainer}>
-                  <Text style={[styles.quoteText, { color: t.textPrimary }]}>
-                    Frosh is not just a committee, it's a movement. It's where memories are made.
-                  </Text>
-                </View>
-                <Icon name="compass-outline" size={30} color={BRAND_PURPLE} style={styles.quoteCompass} />
-              </View>
-
-            </View>
-          </ScrollView>
-        </SafeAreaView>
-      </LinearGradient>
-    </>
+            </ScrollView>
+          </SafeAreaView>
+        </LinearGradient>
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // ... (unchanged)
   container: { flex: 1 },
   header: {
     flexDirection: 'row',
@@ -150,11 +202,9 @@ const styles = StyleSheet.create({
     marginTop: 50,
     paddingVertical: 8,
   },
-  
   titleRow: { flexDirection: 'row', alignItems: 'center' },
   dot: { width: 6, height: 6, borderRadius: 3, marginHorizontal: 8 },
   title: { fontSize: 18, fontWeight: '800', letterSpacing: 3 },
-
   scrollContent: {
     paddingHorizontal: 16,
     paddingBottom: 40,
@@ -169,25 +219,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 12 },
     elevation: 16,
   },
-
-  // Only the logo image – no extra text
-  logoContainer: {
-    alignItems: 'center',
-    marginVertical: 0,
-  },
-  logoImage: {
-    width: 200,  // adjust as needed
-    height: 100,
-    resizeMode: 'contain',
-  },
-
+  logoContainer: { alignItems: 'center', marginVertical: 0 },
+  logoImage: { width: 200, height: 100, resizeMode: 'contain' },
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
   },
   dividerLine: { flex: 1, height: 1 },
-
   sectionRow: {
     flexDirection: 'row',
     marginBottom: 18,
@@ -211,7 +250,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
   },
-
   quoteCard: {
     borderWidth: 1,
     borderRadius: 18,

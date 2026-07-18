@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,8 +6,10 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  Animated,
+  Easing,
 } from "react-native";
-import { useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { lightTheme } from "./LightScreen";
@@ -64,129 +66,175 @@ function InfoRow({ theme, icon, iconColor, label, value }) {
 }
 
 export default function ProfileScreen() {
+  const navigation = useNavigation();
   const route = useRoute();
   const theme = route?.params?.theme || darkTheme;
   const isDarkMode = theme === darkTheme;
   const familyAccent = theme.secondaryAccent || "#B478FF";
 
+  // --- Animations ---
+  const fadeAnim = useRef(new Animated.Value(0)).current;   // fade in only once
+  const slideAnim = useRef(new Animated.Value(0)).current; // slide down on back
+  const isNavigating = useRef(false);
+
+  // Fade in on mount
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  // Back handler: slide down then go back
+  const handleBack = () => {
+    if (isNavigating.current) return;
+    isNavigating.current = true;
+
+    Animated.timing(slideAnim, {
+      toValue: 1,
+      duration: 250,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start(() => {
+      navigation.goBack();
+    });
+  };
+
+  // Use the first gradient colour as solid background – prevents white flashes
+  const bgColor = theme.bgGradient?.[0] || (isDarkMode ? "#02060D" : "#f5f5f5");
+
   return (
-    <>
+    // Root View provides the same background – no white gap ever
+    <View style={{ flex: 1, backgroundColor: bgColor }}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
-      <LinearGradient
-        colors={theme.bgGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.container}
+      <Animated.View
+        style={[
+          {
+            flex: 1,
+            backgroundColor: bgColor,
+            opacity: fadeAnim, // only animates on mount
+          },
+          {
+            transform: [
+              {
+                translateY: slideAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 300], // slide down by 300px (smooth & snappy)
+                }),
+              },
+            ],
+          },
+        ]}
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
+        <LinearGradient
+          colors={theme.bgGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.container}
         >
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>
-              My Profile
-            </Text>
-            <TouchableOpacity
-              style={[
-                styles.editButton,
-                {
-                  backgroundColor: withAlpha(theme.accent, "1F"),
-                  borderColor: withAlpha(theme.accent, "66"),
-                  shadowColor: theme.shadowColor,
-                },
-              ]}
-              activeOpacity={0.7}
-            >
-              <Feather name="edit-2" size={18} color={theme.accent} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Avatar */}
-          <View style={styles.avatarWrap}>
-            <View
-              style={[
-                styles.avatarCircle,
-                {
-                  backgroundColor: withAlpha(theme.accent, "14"),
-                  borderColor: withAlpha(theme.accent, "80"),
-                  shadowColor: theme.shadowColor,
-                },
-              ]}
-            >
-              <Ionicons name="person-outline" size={54} color={theme.accent} />
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Header with back button */}
+            <View style={styles.header}>
+              <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+                <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
+              </TouchableOpacity>
+              <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>
+                My Profile
+              </Text>
+              <View style={styles.headerSpacer} />
             </View>
-          </View>
 
-          {/* Name & email */}
-          <Text style={[styles.name, { color: theme.textPrimary }]}>
-            {PROFILE.name}
-          </Text>
-          <Text style={[styles.email, { color: theme.accent }]}>
-            {PROFILE.email}
-          </Text>
+            {/* Avatar */}
+            <View style={styles.avatarWrap}>
+              <View
+                style={[
+                  styles.avatarCircle,
+                  {
+                    backgroundColor: withAlpha(theme.accent, "14"),
+                    borderColor: withAlpha(theme.accent, "80"),
+                    shadowColor: theme.shadowColor,
+                  },
+                ]}
+              >
+                <Ionicons name="person-outline" size={54} color={theme.accent} />
+              </View>
+            </View>
 
-          {/* Info cards */}
-          <View style={styles.list}>
-            <InfoRow
-              theme={theme}
-              icon={(c) => (
-                <MaterialCommunityIcons
-                  name="card-account-details-outline"
-                  size={22}
-                  color={c}
-                />
-              )}
-              iconColor={theme.accent}
-              label="Roll Number"
-              value={PROFILE.rollNumber}
-            />
-            <InfoRow
-              theme={theme}
-              icon={(c) => <Ionicons name="school-outline" size={22} color={c} />}
-              iconColor={theme.accent}
-              label="Branch"
-              value={PROFILE.branch}
-            />
-            <InfoRow
-              theme={theme}
-              icon={(c) => <Feather name="phone" size={20} color={c} />}
-              iconColor={theme.accent}
-              label="Phone Number"
-              value={PROFILE.phone}
-            />
-            <InfoRow
-              theme={theme}
-              icon={(c) => <Feather name="calendar" size={20} color={c} />}
-              iconColor={theme.accent}
-              label="Date of Birth"
-              value={PROFILE.dob}
-            />
-            <InfoRow
-              theme={theme}
-              icon={(c) => <Ionicons name="people-outline" size={22} color={c} />}
-              iconColor={theme.accent}
-              label="Bootcamp Batch"
-              value={PROFILE.bootcampBatch}
-            />
-            <InfoRow
-              theme={theme}
-              icon={(c) => <Ionicons name="person-outline" size={20} color={c} />}
-              iconColor={familyAccent}
-              label="Mother's Name"
-              value={PROFILE.motherName}
-            />
-            <InfoRow
-              theme={theme}
-              icon={(c) => <Ionicons name="person-outline" size={20} color={c} />}
-              iconColor={familyAccent}
-              label="Father's Name"
-              value={PROFILE.fatherName}
-            />
-          </View>
-        </ScrollView>
-      </LinearGradient>
-    </>
+            {/* Name & email */}
+            <Text style={[styles.name, { color: theme.textPrimary }]}>
+              {PROFILE.name}
+            </Text>
+            <Text style={[styles.email, { color: theme.accent }]}>
+              {PROFILE.email}
+            </Text>
+
+            {/* Info cards */}
+            <View style={styles.list}>
+              <InfoRow
+                theme={theme}
+                icon={(c) => (
+                  <MaterialCommunityIcons
+                    name="card-account-details-outline"
+                    size={22}
+                    color={c}
+                  />
+                )}
+                iconColor={theme.accent}
+                label="Roll Number"
+                value={PROFILE.rollNumber}
+              />
+              <InfoRow
+                theme={theme}
+                icon={(c) => <Ionicons name="school-outline" size={22} color={c} />}
+                iconColor={theme.accent}
+                label="Branch"
+                value={PROFILE.branch}
+              />
+              <InfoRow
+                theme={theme}
+                icon={(c) => <Feather name="phone" size={20} color={c} />}
+                iconColor={theme.accent}
+                label="Phone Number"
+                value={PROFILE.phone}
+              />
+              <InfoRow
+                theme={theme}
+                icon={(c) => <Feather name="calendar" size={20} color={c} />}
+                iconColor={theme.accent}
+                label="Date of Birth"
+                value={PROFILE.dob}
+              />
+              <InfoRow
+                theme={theme}
+                icon={(c) => <Ionicons name="people-outline" size={22} color={c} />}
+                iconColor={theme.accent}
+                label="Bootcamp Batch"
+                value={PROFILE.bootcampBatch}
+              />
+              <InfoRow
+                theme={theme}
+                icon={(c) => <Ionicons name="person-outline" size={20} color={c} />}
+                iconColor={familyAccent}
+                label="Mother's Name"
+                value={PROFILE.motherName}
+              />
+              <InfoRow
+                theme={theme}
+                icon={(c) => <Ionicons name="person-outline" size={20} color={c} />}
+                iconColor={familyAccent}
+                label="Father's Name"
+                value={PROFILE.fatherName}
+              />
+            </View>
+          </ScrollView>
+        </LinearGradient>
+      </Animated.View>
+    </View>
   );
 }
 
@@ -201,25 +249,19 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 20,
+  },
+  backButton: {
+    padding: 4,
   },
   headerTitle: {
     fontSize: 30,
     fontWeight: "800",
   },
-  editButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+  headerSpacer: {
+    width: 40,
   },
   avatarWrap: {
     alignItems: "center",

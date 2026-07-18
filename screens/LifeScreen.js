@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useMemo, memo, useEffect } from "react"; // added useEffect
+import React, { useRef, useCallback, useMemo, memo, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   Image,
   FlatList,
   Animated,
-  Easing, // added Easing
+  Easing,
   Dimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -23,7 +23,6 @@ const PAGE_WIDTH = width - 36;
 
 // ----- Page Data (4 pages) -----
 const pages = [
-  // ... (unchanged, same as original)
   {
     id: "1",
     heroImage: require("../assets/cos.avif"),
@@ -60,7 +59,7 @@ const pages = [
 ];
 
 // ---------------------------------------------------------------------------
-// PageItem — memoized as before (unchanged)
+// PageItem — memoized (unchanged)
 // ---------------------------------------------------------------------------
 const PageItem = memo(function PageItem({ item, index, theme, isDark, styles, scrollX }) {
   const { opacity, translateY } = useMemo(() => {
@@ -129,7 +128,7 @@ const PageItem = memo(function PageItem({ item, index, theme, isDark, styles, sc
 });
 
 // ---------------------------------------------------------------------------
-// PaginationDots — memoized as before (unchanged)
+// PaginationDots — memoized (unchanged)
 // ---------------------------------------------------------------------------
 const PaginationDots = memo(function PaginationDots({ scrollX, theme, styles }) {
   return (
@@ -169,13 +168,18 @@ const PaginationDots = memo(function PaginationDots({ scrollX, theme, styles }) 
   );
 });
 
+// ---------------------------------------------------------------------------
+// Main Component
+// ---------------------------------------------------------------------------
 export default function LifeScreen({ navigation }) {
   const route = useRoute();
   const theme = route.params?.theme || lightTheme;
   const isDark = theme === darkTheme;
 
-  // --- Fade‑in animation for the whole screen ---
+  // --- Animations ---
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const isNavigating = useRef(false);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -185,6 +189,20 @@ export default function LifeScreen({ navigation }) {
       useNativeDriver: true,
     }).start();
   }, []);
+
+  const handleBack = () => {
+    if (isNavigating.current) return;
+    isNavigating.current = true;
+
+    Animated.timing(slideAnim, {
+      toValue: 1,
+      duration: 250,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start(() => {
+      navigation.goBack();
+    });
+  };
 
   const flatListRef = useRef(null);
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -196,6 +214,7 @@ export default function LifeScreen({ navigation }) {
   ).current;
 
   const styles = getStyles(theme);
+  const bgColor = theme.bgGradient?.[0] || (isDark ? '#020B18' : '#F5F5F5');
 
   const renderPage = useCallback(
     ({ item, index }) => (
@@ -222,64 +241,83 @@ export default function LifeScreen({ navigation }) {
   );
 
   return (
-    <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+    <View style={{ flex: 1, backgroundColor: bgColor }}>
       <StatusBar
         translucent
         backgroundColor="transparent"
         barStyle={isDark ? "light-content" : "dark-content"}
       />
-
-      <LinearGradient
-        colors={theme.bgGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.background}
+      <Animated.View
+        style={[
+          {
+            flex: 1,
+            backgroundColor: bgColor,
+            opacity: fadeAnim,
+          },
+          {
+            transform: [
+              {
+                translateY: slideAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 300],
+                }),
+              },
+            ],
+          },
+        ]}
       >
-        <SafeAreaView style={{ flex: 1 }}>
-          <View style={[styles.container, { backgroundColor: theme.cardBg }]}>
-            {/* Header */}
-            <View style={styles.header}>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => navigation.goBack()}
-              >
-                <Feather name="arrow-left" size={36} color={theme.textPrimary} />
-              </TouchableOpacity>
-              <View style={[styles.line, { backgroundColor: theme.lineColor }]} />
-              <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>
-                • LIFE AT THAPAR •
-              </Text>
-              <View style={[styles.line, { backgroundColor: theme.lineColor }]} />
+        <LinearGradient
+          colors={theme.bgGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.background}
+        >
+          <SafeAreaView style={{ flex: 1 }}>
+            <View style={[styles.container, { backgroundColor: theme.cardBg }]}>
+              {/* Header */}
+              <View style={styles.header}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={handleBack}
+                >
+                  <Feather name="arrow-left" size={36} color={theme.textPrimary} />
+                </TouchableOpacity>
+                <View style={[styles.line, { backgroundColor: theme.lineColor }]} />
+                <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>
+                  • LIFE AT THAPAR •
+                </Text>
+                <View style={[styles.line, { backgroundColor: theme.lineColor }]} />
+              </View>
+
+              {/* Pages */}
+              <Animated.FlatList
+                ref={flatListRef}
+                data={pages}
+                renderItem={renderPage}
+                keyExtractor={keyExtractor}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                onScroll={onScroll}
+                scrollEventThrottle={100}
+                style={styles.flatList}
+                pagingEnabled
+                disableIntervalMomentum
+                bounces={false}
+                overScrollMode="never"
+                decelerationRate="fast"
+                getItemLayout={getItemLayout}
+                initialNumToRender={pages.length}
+                windowSize={pages.length}
+                maxToRenderPerBatch={pages.length}
+              />
+
+              {/* Dots */}
+              <PaginationDots scrollX={scrollX} theme={theme} styles={styles} />
             </View>
-
-            {/* Pages */}
-            <Animated.FlatList
-              ref={flatListRef}
-              data={pages}
-              renderItem={renderPage}
-              keyExtractor={keyExtractor}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              onScroll={onScroll}
-              scrollEventThrottle={100}
-              style={styles.flatList}
-              pagingEnabled
-              disableIntervalMomentum
-              bounces={false}
-              overScrollMode="never"
-              decelerationRate="fast"
-              getItemLayout={getItemLayout}
-              initialNumToRender={pages.length}
-              windowSize={pages.length}
-              maxToRenderPerBatch={pages.length}
-            />
-
-            {/* Dots */}
-            <PaginationDots scrollX={scrollX} theme={theme} styles={styles} />
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
-    </Animated.View>
+          </SafeAreaView>
+        </LinearGradient>
+      </Animated.View>
+    </View>
   );
 }
 

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'; // added useRef, useEffect
+import React, { useState, useRef, useEffect } from 'react';
 import {
   SafeAreaView,
   View,
@@ -10,8 +10,8 @@ import {
   StatusBar,
   FlatList,
   Dimensions,
-  Animated, // added
-  Easing,   // added
+  Animated,
+  Easing,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -32,7 +32,7 @@ const fallbackTheme = {
   lineColor: 'rgba(255,255,255,0.1)',
 };
 
-// ---------- DATA (UPDATED) ----------
+// ---------- DATA ----------
 const facultyData = [
   { id: 1, name: 'Dr. MD Singh', designation: 'President' },
   { id: 2, name: 'Dr. Hemdutt Joshi', designation: 'Vice President' },
@@ -42,14 +42,12 @@ const facultyData = [
   { id: 6, name: 'Dr. Tarunpreet Bhatia', designation: 'Vice President' },
 ];
 
-// ✅ OSC – updated names & branches
 const oscData = [
   { id: 1, name: 'Nandini', branch: 'ENC' },
   { id: 2, name: 'Snehil Jhanwar', branch: 'COPC' },
   { id: 3, name: 'Vanshaj Kaushik', branch: 'ENC' },
 ];
 
-// ✅ Core – updated 15 members with branches
 const coreData = [
   { id: 1, name: 'Aarush Sahu', branch: 'MEC' },
   { id: 2, name: 'Agamjot Kaur', branch: 'EEC' },
@@ -73,6 +71,8 @@ const mentorData = Array.from({ length: 94 }, (_, i) => ({
   name: `Mentor ${i + 1}`,
 }));
 
+const tabs = ['faculty', 'osc', 'core', 'mentor'];
+
 // ---------- COMPONENT ----------
 export default function TeamScreen({ theme: themeProp }) {
   const navigation = useNavigation();
@@ -81,9 +81,29 @@ export default function TeamScreen({ theme: themeProp }) {
   const isDarkTheme = t.textPrimary?.toUpperCase() === '#FFFFFF';
   const [activeTab, setActiveTab] = useState('faculty');
 
-  // --- Fade‑in animation ---
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  // --- Tab slider animation ---
+  const [containerWidth, setContainerWidth] = useState(0);
+  const sliderAnim = useRef(new Animated.Value(0)).current;
 
+  // --- Screen fade + slide-out animations ---
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideOutAnim = useRef(new Animated.Value(0)).current;
+  const isNavigating = useRef(false);
+
+  // Animate slider when activeTab or containerWidth changes
+  useEffect(() => {
+    if (containerWidth === 0) return;
+    const tabWidth = containerWidth / tabs.length;
+    const targetOffset = tabs.indexOf(activeTab) * tabWidth;
+    Animated.timing(sliderAnim, {
+      toValue: targetOffset,
+      duration: 300,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, [activeTab, containerWidth]);
+
+  // Fade in on mount
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -93,6 +113,23 @@ export default function TeamScreen({ theme: themeProp }) {
     }).start();
   }, []);
 
+  const handleBack = () => {
+    if (isNavigating.current) return;
+    isNavigating.current = true;
+
+    Animated.timing(slideOutAnim, {
+      toValue: 1,
+      duration: 250,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start(() => {
+      navigation.goBack();
+    });
+  };
+
+  const bgColor = t.bgGradient?.[0] || '#020B18';
+
+  // --- Render functions (unchanged) ---
   const renderFacultyItem = ({ item }) => (
     <View style={styles.gridItem}>
       <View style={[styles.card, { backgroundColor: t.cardBg, borderColor: t.lineColor }]}>
@@ -179,51 +216,97 @@ export default function TeamScreen({ theme: themeProp }) {
   };
 
   return (
-    <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+    <View style={{ flex: 1, backgroundColor: bgColor }}>
       <StatusBar
         translucent
         backgroundColor="transparent"
         barStyle={isDarkTheme ? 'light-content' : 'dark-content'}
       />
-      <LinearGradient colors={t.bgGradient} style={styles.container}>
-        <SafeAreaView style={{ flex: 1 }}>
-          <View style={styles.header}>
-            <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-              <Icon name="arrow-back" size={24} color={t.textPrimary} />
-            </TouchableOpacity>
-            <Text style={[styles.title, { color: t.textPrimary }]}>OUR TEAM</Text>
-            <View style={{ width: 40 }} />
-          </View>
+      <Animated.View
+        style={[
+          {
+            flex: 1,
+            backgroundColor: bgColor,
+            opacity: fadeAnim,
+          },
+          {
+            transform: [
+              {
+                translateY: slideOutAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 300],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
+        <LinearGradient colors={t.bgGradient} style={styles.container}>
+          <SafeAreaView style={{ flex: 1 }}>
+            <View style={styles.header}>
+              <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
+                <Icon name="arrow-back" size={24} color={t.textPrimary} />
+              </TouchableOpacity>
+              <Text style={[styles.title, { color: t.textPrimary }]}>OUR TEAM</Text>
+              <View style={{ width: 40 }} />
+            </View>
 
-          <View style={[styles.tabContainer, { borderBottomColor: t.lineColor }]}>
-            {['faculty', 'osc', 'core', 'mentor'].map((tab) => (
-              <TouchableOpacity
-                key={tab}
-                style={[
-                  styles.tab,
-                  activeTab === tab && { borderBottomWidth: 3, borderBottomColor: t.accent },
-                ]}
-                onPress={() => setActiveTab(tab)}
-              >
-                <Text
+            {/* Tab Bar with sliding indicator */}
+            <View
+              style={[styles.tabContainer, { borderBottomColor: t.lineColor }]}
+              onLayout={(e) => {
+                const { width } = e.nativeEvent.layout;
+                setContainerWidth(width);
+                if (width > 0) {
+                  const initialOffset = tabs.indexOf(activeTab) * (width / tabs.length);
+                  sliderAnim.setValue(initialOffset);
+                }
+              }}
+            >
+              {/* Sliding indicator line */}
+              {containerWidth > 0 && (
+                <Animated.View
                   style={[
-                    styles.tabText,
+                    styles.slider,
                     {
-                      color: activeTab === tab ? t.textPrimary : t.textSecondary,
-                      fontWeight: activeTab === tab ? '700' : '500',
+                      width: containerWidth / tabs.length,
+                      transform: [{ translateX: sliderAnim }],
+                      backgroundColor: t.accent,
                     },
                   ]}
-                >
-                  {tab.toUpperCase()}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+                />
+              )}
 
-          <View style={{ flex: 1 }}>{renderContent()}</View>
-        </SafeAreaView>
-      </LinearGradient>
-    </Animated.View>
+              {tabs.map((tab) => {
+                const isActive = activeTab === tab;
+                return (
+                  <TouchableOpacity
+                    key={tab}
+                    style={styles.tab}
+                    onPress={() => setActiveTab(tab)}
+                  >
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        styles.tabText,
+                        {
+                          color: isActive ? t.textPrimary : t.textSecondary,
+                          fontWeight: isActive ? '700' : '500',
+                        },
+                      ]}
+                    >
+                      {tab.toUpperCase()}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <View style={{ flex: 1 }}>{renderContent()}</View>
+          </SafeAreaView>
+        </LinearGradient>
+      </Animated.View>
+    </View>
   );
 }
 
@@ -249,14 +332,25 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderBottomWidth: 1,
     marginHorizontal: 16,
+    position: 'relative',
+    flexWrap: 'nowrap', // ensures tabs stay in one row
   },
   tab: {
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8, // reduced slightly to prevent overflow
+    flex: 1,
+    alignItems: 'center',
   },
   tabText: {
     fontSize: 14,
     letterSpacing: 0.5,
+  },
+  slider: {
+    position: 'absolute',
+    bottom: -1,
+    left: 0,
+    height: 3,
+    borderRadius: 2,
   },
   listContainer: {
     paddingHorizontal: H_PADDING,

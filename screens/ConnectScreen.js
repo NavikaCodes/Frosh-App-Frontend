@@ -55,8 +55,10 @@ export default function HelpSupportScreen({ theme: themeProp }) {
 
   const [modalVisible, setModalVisible] = useState(false);
 
-  // --- Fade‑in animation ---
+  // --- Animations ---
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const isNavigating = useRef(false);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -66,6 +68,20 @@ export default function HelpSupportScreen({ theme: themeProp }) {
       useNativeDriver: true,
     }).start();
   }, []);
+
+  const handleBack = () => {
+    if (isNavigating.current) return;
+    isNavigating.current = true;
+
+    Animated.timing(slideAnim, {
+      toValue: 1,
+      duration: 250,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start(() => {
+      navigation.goBack();
+    });
+  };
 
   const handlePress = (item) => {
     if (item.id === 'phone') {
@@ -84,53 +100,75 @@ export default function HelpSupportScreen({ theme: themeProp }) {
     return <Icon name={item.icon} size={size} color={color} />;
   };
 
+  const bgColor = t.bgGradient?.[0] || '#020B18';
+
   return (
-    <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+    <View style={{ flex: 1, backgroundColor: bgColor }}>
       <StatusBar
         translucent
         backgroundColor="transparent"
         barStyle={isDarkTheme ? 'light-content' : 'dark-content'}
       />
-      <LinearGradient colors={t.bgGradient} style={styles.container}>
-        <SafeAreaView style={{ flex: 1 }}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-              <Icon name="arrow-back" size={24} color={t.textPrimary} />
-            </TouchableOpacity>
-            <Text style={[styles.title, { color: t.textPrimary }]}>Connect with us</Text>
-            <View style={{ width: 40 }} />
-          </View>
-
-          {/* Subtitle */}
-          <Text style={[styles.subtitle, { color: t.textSecondary }]}>
-            Connect with us through any of these channels
-          </Text>
-
-          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-            <View style={styles.grid}>
-              {helpLinks.map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  style={[
-                    styles.card,
-                    { backgroundColor: t.cardBg, borderColor: t.lineColor },
-                  ]}
-                  onPress={() => handlePress(item)}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.iconCircle, { borderColor: t.accent }]}>
-                    {renderIcon(item)}
-                  </View>
-                  <Text style={[styles.label, { color: t.textPrimary }]}>{item.label}</Text>
-                </TouchableOpacity>
-              ))}
+      <Animated.View
+        style={[
+          {
+            flex: 1,
+            backgroundColor: bgColor,
+            opacity: fadeAnim,
+          },
+          {
+            transform: [
+              {
+                translateY: slideAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 300],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
+        <LinearGradient colors={t.bgGradient} style={styles.container}>
+          <SafeAreaView style={{ flex: 1 }}>
+            {/* Header */}
+            <View style={styles.header}>
+              <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
+                <Icon name="arrow-back" size={24} color={t.textPrimary} />
+              </TouchableOpacity>
+              <Text style={[styles.title, { color: t.textPrimary }]}>Connect with us</Text>
+              <View style={{ width: 40 }} />
             </View>
-          </ScrollView>
-        </SafeAreaView>
-      </LinearGradient>
 
-      {/* Phone Modal */}
+            {/* Subtitle */}
+            <Text style={[styles.subtitle, { color: t.textSecondary }]}>
+              Connect with us through any of these channels
+            </Text>
+
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+              <View style={styles.grid}>
+                {helpLinks.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[
+                      styles.card,
+                      { backgroundColor: t.cardBg, borderColor: t.lineColor },
+                    ]}
+                    onPress={() => handlePress(item)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.iconCircle, { borderColor: t.accent }]}>
+                      {renderIcon(item)}
+                    </View>
+                    <Text style={[styles.label, { color: t.textPrimary }]}>{item.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </SafeAreaView>
+        </LinearGradient>
+      </Animated.View>
+
+      {/* Phone Modal (unchanged) */}
       <Modal visible={modalVisible} transparent animationType="fade">
         <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
           <View
@@ -176,12 +214,12 @@ export default function HelpSupportScreen({ theme: themeProp }) {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-    </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // ... (styles exactly as before, unchanged)
+  // ... (unchanged)
   container: { flex: 1 },
   header: {
     flexDirection: 'row',

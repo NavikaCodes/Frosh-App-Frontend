@@ -162,15 +162,16 @@ const styles = StyleSheet.create({
   },
   hallCard: {
     marginHorizontal: 16,
-    marginBottom: 20,
-    padding: 12,
-    borderRadius: 20,
+    marginBottom: 14,
+    padding: 10,
+    borderRadius: 16,
     borderWidth: 1,
     flexDirection: 'row',
+    alignItems: 'center',
     // borderColor is now applied inline as PURPLE
   },
-  hallImage: { width: 120, height: 150, borderRadius: 16 },
-  cardContent: { flex: 1, marginLeft: 14, justifyContent: 'center' },
-  hallTitle: { fontSize: 18, fontWeight: '700' },
-  hallSubtitle: { fontSize: 14, marginTop: 2 },
+  hallImage: { width: 90, height: 100, borderRadius: 12 },
+  cardContent: { flex: 1, marginLeft: 12, justifyContent: 'center' },
+  hallTitle: { fontSize: 16, fontWeight: '700' },
+  hallSubtitle: { fontSize: 13, marginTop: 1 },
 });

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,9 @@ import {
   Pressable,
   Animated,
   Easing,
-  Dimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-
-const { width: screenWidth } = Dimensions.get('window');
 
 const AboutScreen = ({ theme }) => {
   const navigation = useNavigation();
@@ -51,6 +48,49 @@ const AboutScreen = ({ theme }) => {
   const scaleAnims = useRef(sections.map(() => new Animated.Value(1))).current;
   const chevronAnims = useRef(sections.map(() => new Animated.Value(0))).current;
 
+  const rowCount = 5;
+  const marqueeAnims = useRef(
+    Array.from({ length: rowCount }, () => new Animated.Value(0))
+  ).current;
+
+  const watermarkUnit = 'FROSH '.repeat(12);
+
+  const rowSpeeds = [1500, 4000, 1500, 4000, 1500];
+  const rowDirections = [1, -1, 1, -1, 1]; 
+
+  const [unitWidth, setUnitWidth] = useState(0);
+  const loopAnimationRef = useRef(null);
+
+  const handleUnitLayout = useCallback((e) => {
+    const w = e.nativeEvent.layout.width;
+    setUnitWidth((prev) => (prev ? prev : w));
+  }, []);
+
+  const startMarquee = (width) => {
+    // Stop any previous loop before starting a new one
+    if (loopAnimationRef.current) {
+      loopAnimationRef.current.stop();
+    }
+
+    const animations = marqueeAnims.map((anim, index) => {
+      const direction = rowDirections[index];
+      const startValue = direction === 1 ? 0 : -width;
+      const toValue = direction === 1 ? -width : 0;
+      anim.setValue(startValue);
+      return Animated.loop(
+        Animated.timing(anim, {
+          toValue,
+          duration: rowSpeeds[index],
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      );
+    });
+
+    loopAnimationRef.current = Animated.parallel(animations);
+    loopAnimationRef.current.start();
+  };
+
   useEffect(() => {
     const entrance = sections.map((_, i) =>
       Animated.parallel([
@@ -69,9 +109,22 @@ const AboutScreen = ({ theme }) => {
       ])
     );
     Animated.stagger(70, entrance).start();
+
+    return () => {
+      marqueeAnims.forEach((anim) => anim.stopAnimation());
+      if (loopAnimationRef.current) {
+        loopAnimationRef.current.stop();
+      }
+    };
   }, []);
 
-  // --- Softer, "water-like" press feedback ---
+  // Start the marquee only once we know the real width of one unit block.
+  useEffect(() => {
+    if (unitWidth > 0) {
+      startMarquee(unitWidth);
+    }
+  }, [unitWidth]);
+
   const handlePressIn = (i) => {
     Animated.parallel([
       Animated.spring(scaleAnims[i], {
@@ -110,7 +163,7 @@ const AboutScreen = ({ theme }) => {
     <View
       style={[
         styles.container,
-        { backgroundColor: theme.cardBg }, // 🔥 fixed white flash
+        { backgroundColor: theme.cardBg },
       ]}
     >
       <View
@@ -122,6 +175,36 @@ const AboutScreen = ({ theme }) => {
           },
         ]}
       >
+        {/* Seamless marquee rows — each row is 2 copies of a short unit,
+            translated by exactly one unit's width, so the loop reset is invisible */}
+        <View style={styles.watermarkContainer} pointerEvents="none">
+          {Array.from({ length: rowCount }).map((_, index) => (
+            <Animated.View
+              key={index}
+              style={[
+                styles.watermarkRow,
+                { transform: [{ translateX: marqueeAnims[index] }] },
+              ]}
+            >
+              <Text
+                onLayout={index === 0 ? handleUnitLayout : undefined}
+                style={[styles.watermarkText, { color: theme.accent }]}
+                numberOfLines={1}
+                ellipsizeMode="clip"
+              >
+                {watermarkUnit}
+              </Text>
+              <Text
+                style={[styles.watermarkText, { color: theme.accent }]}
+                numberOfLines={1}
+                ellipsizeMode="clip"
+              >
+                {watermarkUnit}
+              </Text>
+            </Animated.View>
+          ))}
+        </View>
+
         <Text style={[styles.bigCardTitle, { color: theme.textPrimary }]}>
           About Us
         </Text>
@@ -191,7 +274,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 20,
-    // backgroundColor is now set dynamically
   },
   bigCard: {
     flex: 1,
@@ -202,6 +284,7 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 6 },
     elevation: 6,
+    position: 'relative',
   },
   bigCardTitle: {
     fontSize: 24,
@@ -231,6 +314,28 @@ const styles = StyleSheet.create({
   optionSubtitle: {
     fontSize: 14,
     fontWeight: '400',
+  },
+  watermarkContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    paddingTop: 0,
+    zIndex: 0,
+    overflow: 'hidden',
+  },
+  watermarkRow: {
+    flexDirection: 'row',
+  },
+  watermarkText: {
+    fontSize: 73,
+    fontFamily: 'Baloo2_800ExtraBold',
+    opacity: 0.03,
+    letterSpacing: 4,
+    lineHeight: 85,
   },
 });
 

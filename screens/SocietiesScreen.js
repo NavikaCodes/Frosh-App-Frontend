@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'; // added useRef, useEffect, Animated, Easing
+import React, { useState, useRef, useEffect } from 'react';
 import {
   SafeAreaView,
   View,
@@ -21,7 +21,6 @@ import Icon from '@expo/vector-icons/Ionicons';
 
 const { width, height } = Dimensions.get('window');
 
-// Fallback dark theme
 const fallbackTheme = {
   bgGradient: ['#020B18', '#061528', '#041220'],
   textPrimary: '#FFFFFF',
@@ -32,7 +31,6 @@ const fallbackTheme = {
   lineColor: 'rgba(255,255,255,0.1)',
 };
 
-// Society data
 const societies = [
   // Tech
   { id: 1, name: 'ACM', logo: require('../assets/logo.png'), category: 'tech', description: 'Association for Computing Machinery – the premier tech society.' },
@@ -67,8 +65,10 @@ export default function SocietiesScreen({ theme: themeProp }) {
   const [activeCategory, setActiveCategory] = useState('tech');
   const [selectedSociety, setSelectedSociety] = useState(null);
 
-  // --- Fade‑in animation ---
+  // --- Animations ---
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const isNavigating = useRef(false);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -79,87 +79,122 @@ export default function SocietiesScreen({ theme: themeProp }) {
     }).start();
   }, []);
 
-  const filtered = societies.filter(s => s.category === activeCategory);
+  const handleBack = () => {
+    if (isNavigating.current) return;
+    isNavigating.current = true;
 
+    Animated.timing(slideAnim, {
+      toValue: 1,
+      duration: 250,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start(() => {
+      navigation.goBack();
+    });
+  };
+
+  const filtered = societies.filter(s => s.category === activeCategory);
   const openPopup = (society) => setSelectedSociety(society);
   const closePopup = () => setSelectedSociety(null);
 
+  const bgColor = t.bgGradient?.[0] || '#020B18';
+
   return (
-    <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+    <View style={{ flex: 1, backgroundColor: bgColor }}>
       <StatusBar
         translucent
         backgroundColor="transparent"
         barStyle={isDarkTheme ? 'light-content' : 'dark-content'}
       />
-      <LinearGradient colors={t.bgGradient} style={styles.container}>
-        <SafeAreaView style={{ flex: 1 }}>
-          <View style={styles.header}>
-            <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-              <Icon name="arrow-back" size={24} color={t.textPrimary} />
-            </TouchableOpacity>
-            <Text style={[styles.title, { color: t.textPrimary }]}>SOCIETIES</Text>
-            <View style={{ width: 40 }} />
-          </View>
-
-          {/* Category Tabs – centered */}
-          <View style={styles.tabContainer}>
-            {categories.map((cat) => (
-              <TouchableOpacity
-                key={cat.key}
-                style={[
-                  styles.tab,
-                  { backgroundColor: t.tabInactiveBg || t.lineColor },
-                  activeCategory === cat.key && {
-                    backgroundColor: t.tabActiveBg || t.accent,
-                  },
-                ]}
-                onPress={() => setActiveCategory(cat.key)}
-              >
-                <Text
-                  style={[
-                    styles.tabText,
-                    {
-                      color:
-                        activeCategory === cat.key
-                          ? t.tabActiveText || '#FFFFFF'
-                          : t.tabInactiveText || t.textSecondary,
-                    },
-                  ]}
-                >
-                  {cat.label}
-                </Text>
+      <Animated.View
+        style={[
+          {
+            flex: 1,
+            backgroundColor: bgColor,
+            opacity: fadeAnim,
+          },
+          {
+            transform: [
+              {
+                translateY: slideAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 300],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
+        <LinearGradient colors={t.bgGradient} style={styles.container}>
+          <SafeAreaView style={{ flex: 1 }}>
+            <View style={styles.header}>
+              <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
+                <Icon name="arrow-back" size={24} color={t.textPrimary} />
               </TouchableOpacity>
-            ))}
-          </View>
+              <Text style={[styles.title, { color: t.textPrimary }]}>SOCIETIES</Text>
+              <View style={{ width: 40 }} />
+            </View>
 
-          {/* Grid of societies */}
-          <ScrollView contentContainerStyle={styles.scrollContent}>
-            <View style={styles.grid}>
-              {filtered.map((society) => (
+            {/* Category Tabs */}
+            <View style={styles.tabContainer}>
+              {categories.map((cat) => (
                 <TouchableOpacity
-                  key={society.id}
+                  key={cat.key}
                   style={[
-                    styles.card,
-                    {
-                      backgroundColor: t.cardBg,
-                      borderColor: t.lineColor,
+                    styles.tab,
+                    { backgroundColor: t.tabInactiveBg || t.lineColor },
+                    activeCategory === cat.key && {
+                      backgroundColor: t.tabActiveBg || t.accent,
                     },
                   ]}
-                  onPress={() => openPopup(society)}
-                  activeOpacity={0.8}
+                  onPress={() => setActiveCategory(cat.key)}
                 >
-                  <Image source={society.logo} style={styles.cardImage} />
-                  <Text style={[styles.cardName, { color: t.textPrimary }]}>
-                    {society.name}
+                  <Text
+                    style={[
+                      styles.tabText,
+                      {
+                        color:
+                          activeCategory === cat.key
+                            ? t.tabActiveText || '#FFFFFF'
+                            : t.tabInactiveText || t.textSecondary,
+                      },
+                    ]}
+                  >
+                    {cat.label}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
-          </ScrollView>
-        </SafeAreaView>
-      </LinearGradient>
 
-      {/* Modal Popup with Blur */}
+            {/* Grid */}
+            <ScrollView contentContainerStyle={styles.scrollContent}>
+              <View style={styles.grid}>
+                {filtered.map((society) => (
+                  <TouchableOpacity
+                    key={society.id}
+                    style={[
+                      styles.card,
+                      {
+                        backgroundColor: t.cardBg,
+                        borderColor: t.lineColor,
+                      },
+                    ]}
+                    onPress={() => openPopup(society)}
+                    activeOpacity={0.8}
+                  >
+                    <Image source={society.logo} style={styles.cardImage} />
+                    <Text style={[styles.cardName, { color: t.textPrimary }]}>
+                      {society.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </SafeAreaView>
+        </LinearGradient>
+      </Animated.View>
+
+      {/* Modal Popup */}
       <Modal visible={selectedSociety !== null} transparent animationType="fade">
         <TouchableWithoutFeedback onPress={closePopup}>
           <BlurView
@@ -197,7 +232,7 @@ export default function SocietiesScreen({ theme: themeProp }) {
           </BlurView>
         </TouchableWithoutFeedback>
       </Modal>
-    </Animated.View>
+    </View>
   );
 }
 

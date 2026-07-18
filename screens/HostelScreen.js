@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react'; // added useRef, useEffect, Animated, Easing
+import React, { useRef, useEffect } from 'react';
 import {
   SafeAreaView,
   View,
@@ -31,8 +31,10 @@ export default function HostelsScreen() {
   const route = useRoute();
   const theme = route.params?.theme || fallbackTheme;
 
-  // --- Fade‑in animation ---
+  // --- Animations ---
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const isNavigating = useRef(false);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -43,120 +45,156 @@ export default function HostelsScreen() {
     }).start();
   }, []);
 
+  const handleBack = () => {
+    if (isNavigating.current) return;
+    isNavigating.current = true;
+
+    Animated.timing(slideAnim, {
+      toValue: 1,
+      duration: 250,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start(() => {
+      navigation.goBack();
+    });
+  };
+
+  const bgColor = theme.bgGradient?.[0] || '#020B18';
+
   return (
-    <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+    <View style={{ flex: 1, backgroundColor: bgColor }}>
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
-      <LinearGradient colors={theme.bgGradient} style={styles.container}>
-        <SafeAreaView style={{ flex: 1 }}>
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 50 }}>
-            {/* Header */}
-            <View style={styles.header}>
-              <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                <Icon name="arrow-back" size={24} color={theme.textPrimary} />
+      <Animated.View
+        style={[
+          {
+            flex: 1,
+            backgroundColor: bgColor,
+            opacity: fadeAnim,
+          },
+          {
+            transform: [
+              {
+                translateY: slideAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 300],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
+        <LinearGradient colors={theme.bgGradient} style={styles.container}>
+          <SafeAreaView style={{ flex: 1 }}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 50 }}>
+              {/* Header */}
+              <View style={styles.header}>
+                <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
+                  <Icon name="arrow-back" size={24} color={theme.textPrimary} />
+                </TouchableOpacity>
+
+                <View style={styles.titleContainer}>
+                  <View style={[styles.dot, { backgroundColor: theme.accent }]} />
+                  <Text style={[styles.title, { color: theme.textPrimary }]}>HOSTELS</Text>
+                  <View style={[styles.dot, { backgroundColor: theme.accent }]} />
+                </View>
+
+                <View style={styles.spacer} />
+              </View>
+
+              {/* Subtitle */}
+              <View style={styles.subTitleArea}>
+                <Text style={[styles.subTitle, { color: theme.textSecondary }]}>Your home away from home.</Text>
+                <Text style={[styles.subTitle, { color: theme.textSecondary }]}>Comfort, convenience and community.</Text>
+              </View>
+
+              {/* Divider */}
+              <View style={styles.sectionRow}>
+                <View style={[styles.line, { backgroundColor: theme.accent }]} />
+                <Text style={[styles.sectionTitle, { color: theme.accent }]}>CHOOSE YOUR HOME</Text>
+                <View style={[styles.line, { backgroundColor: theme.accent }]} />
+              </View>
+
+              {/* BOYS HOSTEL */}
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate('Boys', { theme })}
+              >
+                <View style={[styles.hostelCard, { borderColor: theme.accent, backgroundColor: theme.cardBg }]}>
+                  <Image source={require('../assets/cos.avif')} style={styles.hostelImage} />
+                  <View style={styles.cardContent}>
+                    <View>
+                      <Text style={[styles.hostelTitle, { color: theme.textPrimary }]}>BOYS HOSTEL</Text>
+                      <Text style={[styles.hostelSubtitle, { color: theme.textSecondary }]}>Built for comfort.</Text>
+                      <Text style={[styles.hostelSubtitle, { color: theme.textSecondary }]}>Made for brotherhood.</Text>
+                    </View>
+                    <View style={[styles.separator, { backgroundColor: theme.accent }]} />
+                    <View style={styles.facilityRow}>
+                      <View style={styles.facilityItem}>
+                        <Feather name="wifi" size={18} color={theme.accent} />
+                        <Text style={[styles.facilityText, { color: theme.textPrimary }]}>Wi-Fi</Text>
+                      </View>
+                      <View style={styles.facilityItem}>
+                        <MaterialCommunityIcons name="silverware-fork-knife" size={18} color={theme.accent} />
+                        <Text style={[styles.facilityText, { color: theme.textPrimary }]}>Mess</Text>
+                      </View>
+                      <View style={styles.facilityItem}>
+                        <MaterialCommunityIcons name="dumbbell" size={18} color={theme.accent} />
+                        <Text style={[styles.facilityText, { color: theme.textPrimary }]}>Gym</Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
               </TouchableOpacity>
 
-              <View style={styles.titleContainer}>
-                <View style={[styles.dot, { backgroundColor: theme.accent }]} />
-                <Text style={[styles.title, { color: theme.textPrimary }]}>HOSTELS</Text>
-                <View style={[styles.dot, { backgroundColor: theme.accent }]} />
-              </View>
-
-              <View style={styles.spacer} />
-            </View>
-
-            {/* Subtitle */}
-            <View style={styles.subTitleArea}>
-              <Text style={[styles.subTitle, { color: theme.textSecondary }]}>Your home away from home.</Text>
-              <Text style={[styles.subTitle, { color: theme.textSecondary }]}>Comfort, convenience and community.</Text>
-            </View>
-
-            {/* Divider */}
-            <View style={styles.sectionRow}>
-              <View style={[styles.line, { backgroundColor: theme.accent }]} />
-              <Text style={[styles.sectionTitle, { color: theme.accent }]}>CHOOSE YOUR HOME</Text>
-              <View style={[styles.line, { backgroundColor: theme.accent }]} />
-            </View>
-
-            {/* BOYS HOSTEL */}
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate('Boys', { theme })}
-            >
-              <View style={[styles.hostelCard, { borderColor: theme.accent, backgroundColor: theme.cardBg }]}>
-                <Image source={require('../assets/cos.avif')} style={styles.hostelImage} />
-                <View style={styles.cardContent}>
-                  <View>
-                    <Text style={[styles.hostelTitle, { color: theme.textPrimary }]}>BOYS HOSTEL</Text>
-                    <Text style={[styles.hostelSubtitle, { color: theme.textSecondary }]}>Built for comfort.</Text>
-                    <Text style={[styles.hostelSubtitle, { color: theme.textSecondary }]}>Made for brotherhood.</Text>
-                  </View>
-                  <View style={[styles.separator, { backgroundColor: theme.accent }]} />
-                  <View style={styles.facilityRow}>
-                    <View style={styles.facilityItem}>
-                      <Feather name="wifi" size={18} color={theme.accent} />
-                      <Text style={[styles.facilityText, { color: theme.textPrimary }]}>Wi-Fi</Text>
+              {/* GIRLS HOSTEL */}
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate('Girls', { theme })}
+              >
+                <View style={[styles.hostelCardPurple, { backgroundColor: theme.cardBg }]}>
+                  <Image source={require('../assets/cos.avif')} style={styles.hostelImage} />
+                  <View style={styles.cardContent}>
+                    <View>
+                      <Text style={[styles.hostelTitle, { color: theme.textPrimary }]}>GIRLS HOSTEL</Text>
+                      <Text style={[styles.hostelSubtitle, { color: '#C99DFF' }]}>A space to thrive.</Text>
+                      <Text style={[styles.hostelSubtitle, { color: '#C99DFF' }]}>A community to grow.</Text>
                     </View>
-                    <View style={styles.facilityItem}>
-                      <MaterialCommunityIcons name="silverware-fork-knife" size={18} color={theme.accent} />
-                      <Text style={[styles.facilityText, { color: theme.textPrimary }]}>Mess</Text>
-                    </View>
-                    <View style={styles.facilityItem}>
-                      <MaterialCommunityIcons name="dumbbell" size={18} color={theme.accent} />
-                      <Text style={[styles.facilityText, { color: theme.textPrimary }]}>Gym</Text>
+                    <View style={[styles.separatorPurple, { backgroundColor: '#A86CFF' }]} />
+                    <View style={styles.facilityRow}>
+                      <View style={styles.facilityItem}>
+                        <Feather name="wifi" size={18} color="#A86CFF" />
+                        <Text style={[styles.facilityText, { color: theme.textPrimary }]}>Wi-Fi</Text>
+                      </View>
+                      <View style={styles.facilityItem}>
+                        <MaterialCommunityIcons name="silverware-fork-knife" size={18} color="#A86CFF" />
+                        <Text style={[styles.facilityText, { color: theme.textPrimary }]}>Mess</Text>
+                      </View>
+                      <View style={styles.facilityItem}>
+                        <MaterialCommunityIcons name="sofa-outline" size={18} color="#A86CFF" />
+                        <Text style={[styles.facilityText, { color: theme.textPrimary }]}>Common</Text>
+                        <Text style={[styles.facilityText, { marginTop: -2, color: theme.textPrimary }]}>Room</Text>
+                      </View>
                     </View>
                   </View>
                 </View>
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
 
-            {/* GIRLS HOSTEL */}
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate('Girls', { theme })}
-            >
-              <View style={[styles.hostelCardPurple, { backgroundColor: theme.cardBg }]}>
-                <Image source={require('../assets/cos.avif')} style={styles.hostelImage} />
-                <View style={styles.cardContent}>
-                  <View>
-                    <Text style={[styles.hostelTitle, { color: theme.textPrimary }]}>GIRLS HOSTEL</Text>
-                    <Text style={[styles.hostelSubtitle, { color: '#C99DFF' }]}>A space to thrive.</Text>
-                    <Text style={[styles.hostelSubtitle, { color: '#C99DFF' }]}>A community to grow.</Text>
-                  </View>
-                  <View style={[styles.separatorPurple, { backgroundColor: '#A86CFF' }]} />
-                  <View style={styles.facilityRow}>
-                    <View style={styles.facilityItem}>
-                      <Feather name="wifi" size={18} color="#A86CFF" />
-                      <Text style={[styles.facilityText, { color: theme.textPrimary }]}>Wi-Fi</Text>
-                    </View>
-                    <View style={styles.facilityItem}>
-                      <MaterialCommunityIcons name="silverware-fork-knife" size={18} color="#A86CFF" />
-                      <Text style={[styles.facilityText, { color: theme.textPrimary }]}>Mess</Text>
-                    </View>
-                    <View style={styles.facilityItem}>
-                      <MaterialCommunityIcons name="sofa-outline" size={18} color="#A86CFF" />
-                      <Text style={[styles.facilityText, { color: theme.textPrimary }]}>Common</Text>
-                      <Text style={[styles.facilityText, { marginTop: -2, color: theme.textPrimary }]}>Room</Text>
-                    </View>
+              {/* Safe & Secure */}
+              <View style={[styles.securityCard, { borderColor: theme.accent, backgroundColor: theme.cardBg }]}>
+                <View style={styles.securityLeft}>
+                  <MaterialCommunityIcons name="shield-check-outline" size={34} color={theme.accent} />
+                  <View style={{ marginLeft: 12 }}>
+                    <Text style={[styles.securityTitle, { color: theme.textPrimary }]}>Safe & Secure Campus</Text>
+                    <Text style={[styles.securityText, { color: theme.textSecondary }]}>24/7 security and dedicated support</Text>
+                    <Text style={[styles.securityText, { color: theme.textSecondary }]}>for a worry-free stay.</Text>
                   </View>
                 </View>
               </View>
-            </TouchableOpacity>
-
-            {/* Safe & Secure */}
-            <View style={[styles.securityCard, { borderColor: theme.accent, backgroundColor: theme.cardBg }]}>
-              <View style={styles.securityLeft}>
-                <MaterialCommunityIcons name="shield-check-outline" size={34} color={theme.accent} />
-                <View style={{ marginLeft: 12 }}>
-                  <Text style={[styles.securityTitle, { color: theme.textPrimary }]}>Safe & Secure Campus</Text>
-                  <Text style={[styles.securityText, { color: theme.textSecondary }]}>24/7 security and dedicated support</Text>
-                  <Text style={[styles.securityText, { color: theme.textSecondary }]}>for a worry-free stay.</Text>
-                </View>
-              </View>
-            </View>
-          </ScrollView>
-        </SafeAreaView>
-      </LinearGradient>
-    </Animated.View>
+            </ScrollView>
+          </SafeAreaView>
+        </LinearGradient>
+      </Animated.View>
+    </View>
   );
 }
 

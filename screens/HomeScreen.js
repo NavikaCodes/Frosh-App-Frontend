@@ -13,6 +13,7 @@ import {
   Animated,
   Easing,
   Platform,
+  PanResponder,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -41,19 +42,133 @@ export default function HomeScreen() {
   const isAbout = activeTab === "about";
 
   const tabIndex = { bootcamp: 0, frosh: 1, about: 2 };
+  const tabNames = ["bootcamp", "frosh", "about"];
 
-  // Animate slider when activeTab or containerWidth changes
+  // Holds the slider offset at the moment a drag begins
+  const dragStartValue = useRef(0);
+  // Which tab index the drag started from (used to decide next/prev on release)
+  const dragStartIndex = useRef(0);
+  // Tracks whether a finger is currently dragging the slider (disables the
+  // tab-press-driven effect from fighting the gesture)
+  const isDragging = useRef(false);
+  // PanResponder is created once, so we mirror fast-changing values into
+  // refs here to avoid the gesture handlers ever reading stale state
+  const containerWidthRef = useRef(0);
+  const activeTabRef = useRef(activeTab);
   useEffect(() => {
+    containerWidthRef.current = containerWidth;
+  }, [containerWidth]);
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
+
+  // Smoothly animate the slider to rest on top of a given tab
+  const animateToTab = (tabId, duration = 300) => {
     if (containerWidth === 0) return;
     const tabWidth = containerWidth / 3;
-    const targetOffset = tabIndex[activeTab] * tabWidth;
+    const targetOffset = tabIndex[tabId] * tabWidth;
     Animated.timing(slideAnim, {
       toValue: targetOffset,
-      duration: 300,
+      duration,
       easing: Easing.inOut(Easing.ease),
       useNativeDriver: true,
     }).start();
+  };
+
+  // Animate slider when activeTab or containerWidth changes (tap-triggered)
+  useEffect(() => {
+    if (containerWidth === 0 || isDragging.current) return;
+    animateToTab(activeTab);
   }, [activeTab, containerWidth]);
+
+  // Subtle "pop" for the content card whenever the active tab changes
+  const contentOpacity = useRef(new Animated.Value(1)).current;
+  const contentScale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    contentOpacity.setValue(0);
+    contentScale.setValue(0.95);
+    Animated.parallel([
+      Animated.timing(contentOpacity, {
+        toValue: 1,
+        duration: 220,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.spring(contentScale, {
+        toValue: 1,
+        friction: 7,
+        tension: 90,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [activeTab]);
+
+  // --- Drag-to-slide gesture handling ---
+  const panResponder = useRef(
+    PanResponder.create({
+      // Let taps on the tabs pass through untouched...
+      onStartShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponderCapture: () => false,
+      // ...but claim the gesture as soon as it's a clear horizontal drag
+      onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
+        return (
+          Math.abs(gestureState.dx) > 6 &&
+          Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.5
+        );
+      },
+      onPanResponderGrant: () => {
+        isDragging.current = true;
+        dragStartIndex.current = tabIndex[activeTabRef.current];
+        slideAnim.stopAnimation((value) => {
+          dragStartValue.current = value;
+        });
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        const width = containerWidthRef.current;
+        if (width === 0) return;
+        const tabWidth = width / 3;
+        const maxOffset = tabWidth * 2;
+        const newOffset = Math.max(
+          0,
+          Math.min(maxOffset, dragStartValue.current + gestureState.dx)
+        );
+        slideAnim.setValue(newOffset);
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        const width = containerWidthRef.current;
+        if (width === 0) {
+          isDragging.current = false;
+          return;
+        }
+        const tabWidth = width / 3;
+        const startIndex = dragStartIndex.current;
+        const dx = gestureState.dx;
+        const vx = gestureState.vx;
+
+        // Only a small drag (or a quick flick) is needed to fully commit to
+        // the next/previous tab — no need to drag halfway across.
+        const distanceThreshold = tabWidth * 0.18;
+        const velocityThreshold = 0.25;
+
+        let targetIndex = startIndex;
+        if (dx > distanceThreshold || vx > velocityThreshold) {
+          targetIndex = Math.min(2, startIndex + 1);
+        } else if (dx < -distanceThreshold || vx < -velocityThreshold) {
+          targetIndex = Math.max(0, startIndex - 1);
+        }
+
+        const newTab = tabNames[targetIndex];
+        isDragging.current = false;
+        setActiveTab(newTab);
+        animateToTab(newTab, 180);
+      },
+      onPanResponderTerminate: () => {
+        isDragging.current = false;
+        animateToTab(activeTabRef.current, 200);
+      },
+    })
+  ).current;
 
   const menuOptions = [
     { id: "account", label: "Account", icon: "person-outline" },
@@ -151,6 +266,7 @@ export default function HomeScreen() {
             />
             <View
               style={styles.tabsContainer}
+              {...panResponder.panHandlers}
               onLayout={(e) => {
                 const { width } = e.nativeEvent.layout;
                 setContainerWidth(width);
@@ -206,66 +322,73 @@ export default function HomeScreen() {
           </BlurView>
 
           {/* CONTENT */}
-          {isBootcamp ? (
-            <BootcampScreen theme={theme} />
-          ) : isFrosh ? (
-            <BlurView
-              intensity={150}
-              tint="dark"
-              experimentalBlurMethod="dimezisBlurView"
-              style={[
-                styles.liveCard,
-                {
-                  backgroundColor: glassBg,
-                  borderColor: glassBorder,
-                  shadowColor: theme.shadowColor,
-                },
-              ]}
-            >
-              <LinearGradient
-                colors={glassSheen}
-                start={{ x: 0.5, y: 0 }}
-                end={{ x: 0.5, y: 1 }}
-                style={styles.glassSheen}
-                pointerEvents="none"
-              />
-              <View style={styles.liveHeadingContainer}>
-                <View style={[styles.line, { backgroundColor: theme.lineColor }]} />
-                <Text style={[styles.liveHeading, { color: theme.accent }]}>• LIVE EVENT •</Text>
-                <View style={[styles.line, { backgroundColor: theme.lineColor }]} />
-              </View>
-
-              <Image source={require("../assets/concert.jpg")} style={styles.eventImage} />
-
-              <View style={[styles.liveNow, { borderColor: theme.accent }]}>
-                <Text style={[styles.liveNowText, { color: theme.accent }]}>LIVE NOW</Text>
-              </View>
-
-              <Text style={[styles.eventTitle, { color: theme.textPrimary }]}>Battle of Hoods</Text>
-
-              <View style={styles.infoRow}>
-                <Ionicons name="location" size={18} color={theme.accent} />
-                <Text style={[styles.location, { color: theme.accent }]}>Main Auditorium</Text>
-              </View>
-
-              <View style={styles.infoRow}>
-                <Feather name="calendar" size={16} color={theme.accent} />
-                <Text style={[styles.infoText, { color: theme.textPrimary }]}>07 May 2026</Text>
-              </View>
-
-              <View style={[styles.bottomRow, { marginTop: 0 }]}>
-                <View style={styles.infoRow}>
-                  <Feather name="clock" size={16} color={theme.accent} />
-                  <Text style={[styles.infoText, { color: theme.textPrimary }]}>06:30 PM Onwards</Text>
+          <Animated.View
+            style={{
+              opacity: contentOpacity,
+              transform: [{ scale: contentScale }],
+            }}
+          >
+            {isBootcamp ? (
+              <BootcampScreen theme={theme} />
+            ) : isFrosh ? (
+              <BlurView
+                intensity={150}
+                tint="dark"
+                experimentalBlurMethod="dimezisBlurView"
+                style={[
+                  styles.liveCard,
+                  {
+                    backgroundColor: glassBg,
+                    borderColor: glassBorder,
+                    shadowColor: theme.shadowColor,
+                  },
+                ]}
+              >
+                <LinearGradient
+                  colors={glassSheen}
+                  start={{ x: 0.5, y: 0 }}
+                  end={{ x: 0.5, y: 1 }}
+                  style={styles.glassSheen}
+                  pointerEvents="none"
+                />
+                <View style={styles.liveHeadingContainer}>
+                  <View style={[styles.line, { backgroundColor: theme.lineColor }]} />
+                  <Text style={[styles.liveHeading, { color: theme.accent }]}>• LIVE EVENT •</Text>
+                  <View style={[styles.line, { backgroundColor: theme.lineColor }]} />
                 </View>
-                <TouchableOpacity style={[styles.arrowCircle, { borderColor: theme.accent }]}>
-                  <Ionicons name="arrow-forward" size={24} color={theme.accent} />
-                </TouchableOpacity>
-              </View>
-            </BlurView>
-          ) : (
-            <AboutScreen theme={theme} />
-          )}
+
+                <Image source={require("../assets/concert.jpg")} style={styles.eventImage} />
+
+                <View style={[styles.liveNow, { borderColor: theme.accent }]}>
+                  <Text style={[styles.liveNowText, { color: theme.accent }]}>LIVE NOW</Text>
+                </View>
+
+                <Text style={[styles.eventTitle, { color: theme.textPrimary }]}>Battle of Hoods</Text>
+
+                <View style={styles.infoRow}>
+                  <Ionicons name="location" size={18} color={theme.accent} />
+                  <Text style={[styles.location, { color: theme.accent }]}>Main Auditorium</Text>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <Feather name="calendar" size={16} color={theme.accent} />
+                  <Text style={[styles.infoText, { color: theme.textPrimary }]}>07 May 2026</Text>
+                </View>
+
+                <View style={[styles.bottomRow, { marginTop: 0 }]}>
+                  <View style={styles.infoRow}>
+                    <Feather name="clock" size={16} color={theme.accent} />
+                    <Text style={[styles.infoText, { color: theme.textPrimary }]}>06:30 PM Onwards</Text>
+                  </View>
+                  <TouchableOpacity style={[styles.arrowCircle, { borderColor: theme.accent }]}>
+                    <Ionicons name="arrow-forward" size={24} color={theme.accent} />
+                  </TouchableOpacity>
+                </View>
+              </BlurView>
+            ) : (
+              <AboutScreen theme={theme} />
+            )}
+          </Animated.View>
         </ScrollView>
       </LinearGradient>
 

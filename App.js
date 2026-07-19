@@ -187,10 +187,42 @@ export default function App() {
     presentation: 'transparentModal',   
   }}
 />
-<Stack.Screen name="EateryPoints" component={EateryScreen} />
-<Stack.Screen name="SportsComplex" component={SportsScreen} />
-<Stack.Screen name="StudyZones" component={StudyScreen} />
-<Stack.Screen name="CulturalCentres" component={CulturalScreen} />
+<Stack.Screen name="EateryPoints" component={EateryScreen}
+options={{
+    animationEnabled: false,          
+    headerShown: false,
+    cardStyle: { backgroundColor: 'transparent' },  
+    cardShadowEnabled: false,           
+    cardOverlayEnabled: false,          
+    presentation: 'transparentModal',   
+  }} />
+<Stack.Screen name="SportsComplex" component={SportsScreen} 
+options={{
+    animationEnabled: false,          
+    headerShown: false,
+    cardStyle: { backgroundColor: 'transparent' },  
+    cardShadowEnabled: false,           
+    cardOverlayEnabled: false,          
+    presentation: 'transparentModal',   
+  }}/>
+<Stack.Screen name="StudyZones" component={StudyScreen} 
+options={{
+    animationEnabled: false,          
+    headerShown: false,
+    cardStyle: { backgroundColor: 'transparent' },  
+    cardShadowEnabled: false,           
+    cardOverlayEnabled: false,          
+    presentation: 'transparentModal',   
+  }}/>
+<Stack.Screen name="CulturalCentres" component={CulturalScreen} 
+options={{
+    animationEnabled: false,          
+    headerShown: false,
+    cardStyle: { backgroundColor: 'transparent' },  
+    cardShadowEnabled: false,           
+    cardOverlayEnabled: false,          
+    presentation: 'transparentModal',   
+  }}/>
           
         </Stack.Navigator>
       </NavigationContainer>
